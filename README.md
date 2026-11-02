@@ -1,6 +1,6 @@
 # Game Night
 
-Five small browser games to play on a phone or computer, against the computer or online with friends.
+Six small browser games to play on a phone or computer, against the computer or online with friends.
 
 **Play:** https://hkarimi561.github.io/games/
 
@@ -10,6 +10,7 @@ Five small browser games to play on a phone or computer, against the computer or
 | Fleet Command (Battleship) | 2, computer opponent | [`battleship/`](battleship/) |
 | Liar's Dice | 2–6, computer players | [`liars-dice/`](liars-dice/) |
 | Minesweeper Race | 1+, computer rival | [`minesweeper/`](minesweeper/) |
+| Draw & Guess (Pictionary-style, English & Persian words) | 2–8, one phone or online | [`draw/`](draw/) |
 | Snake Arena | up to 6, computer snakes | [`snake/`](snake/) |
 
 ## Playing online
