@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en" data-game="liars-dice">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Bluff and bid on hidden dice against computer players or friends online.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23245443'/%3E%3Ccircle cx='10' cy='10' r='3' fill='white'/%3E%3Ccircle cx='22' cy='10' r='3' fill='white'/%3E%3Ccircle cx='10' cy='22' r='3' fill='white'/%3E%3Ccircle cx='22' cy='22' r='3' fill='white'/%3E%3C/svg%3E">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}.kgn-home{display:block;text-align:center;padding:8px 16px 28px;font:600 14px system-ui,sans-serif;color:inherit;opacity:.7}</style>
+<title>Liar's Dice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rye&family=Nunito+Sans:opsz,wght@6..12,400;6..12,700;6..12,800&display=swap">
+<style>
+/* Layout: a saloon table — players around the top, the standing bid in the middle of the felt, your cup and bid controls at the bottom */
+:root{
+  --bg:#e6ebe4; --panel:#f7f9f5; --ink:#18241f; --muted:#5b6b63; --line:#c5d1c8;
+  --felt:#245443; --felt2:#1d4637; --feltInk:#eaf3ec; --feltMuted:#a9c7b6;
+  --bone:#f5f1e4; --pip:#1c1c1a; --brass:#d9a441; --liar:#d4442e; --win:#3c9a63;
+  --c0:#2f6fd6; --c1:#c94a2c; --c2:#8a46c9; --c3:#b8860b; --c4:#14837a; --c5:#c43a7e;
+  --display:"Rye",Georgia,"Times New Roman",serif;
+  --body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1512; --panel:#16201b; --ink:#e4ece6; --muted:#97aa9f; --line:#2b3a32;
+  --felt:#183c30; --felt2:#133126; --feltInk:#e6f1ea; --feltMuted:#93b6a3;
+  --bone:#efe9d8; --pip:#1c1c1a; --brass:#e8b85a; --liar:#ff6a50; --win:#5cc98a;
+  --c0:#7aa7ff; --c1:#ff8c6b; --c2:#c79bff; --c3:#f0c14b; --c4:#4fd1c2; --c5:#ff86c0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1512; --panel:#16201b; --ink:#e4ece6; --muted:#97aa9f; --line:#2b3a32;
+  --felt:#183c30; --felt2:#133126; --feltInk:#e6f1ea; --feltMuted:#93b6a3;
+  --bone:#efe9d8; --pip:#1c1c1a; --brass:#e8b85a; --liar:#ff6a50; --win:#5cc98a;
+  --c0:#7aa7ff; --c1:#ff8c6b; --c2:#c79bff; --c3:#f0c14b; --c4:#4fd1c2; --c5:#ff86c0; color-scheme:dark}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:640px;margin:0 auto;padding-block:14px 36px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+h1{font-family:var(--display);font-weight:400;font-size:1.9rem;line-height:1;margin:0;white-space:nowrap;min-width:0}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px;flex:none}
+.tabs button{border:0;background:none;color:var(--muted);font:inherit;font-weight:800;font-size:.8rem;padding:6px 11px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:12px}
+.panel h2{font-family:var(--display);font-weight:400;font-size:1.25rem;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.lbl{font-size:.72rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.field{display:flex;align-items:center;gap:8px}
+input[type=text],select{font:inherit;font-size:.95rem;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);min-width:0}
+input[type=text]{flex:1 1 140px}
+.chk{display:flex;align-items:center;gap:6px;font-size:.92rem}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.stepper button{font:inherit;font-weight:800;font-size:1.15rem;width:36px;height:36px;border:0;background:none;color:var(--ink);cursor:pointer}
+.stepper button:disabled{opacity:.3;cursor:default}
+.stepper output{min-width:28px;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
+.btn{font:inherit;font-weight:800;padding:9px 15px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.note{font-size:.88rem;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:9px 11px;margin:0}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+/* table */
+.table{background:radial-gradient(120% 90% at 50% 40%,var(--felt),var(--felt2));color:var(--feltInk);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:12px;box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--brass) 45%,transparent),0 10px 28px -18px rgba(0,0,0,.6)}
+.players{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.pl{border-radius:10px;padding:6px 8px;background:color-mix(in srgb,var(--felt2) 70%,#000 10%);border:1px solid transparent;display:flex;flex-direction:column;gap:4px;min-width:0}
+.pl.turn{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.pl.out{opacity:.4}
+.pl .nm{font-weight:800;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.pl .nm i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.pl .cnt{display:flex;gap:2px;flex-wrap:wrap;min-height:10px}
+.pl .cnt b{width:9px;height:9px;border-radius:2px;background:var(--bone);opacity:.9}
+.pl .sub{font-size:.7rem;color:var(--feltMuted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.center{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;min-height:96px;justify-content:center}
+.bidline{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:2.4rem;line-height:1}
+.bidby{font-size:.85rem;color:var(--feltMuted)}
+.status{font-weight:800;font-size:1.02rem;text-wrap:balance}
+.status.bad{color:var(--liar)} .status.good{color:var(--win)}
+.hist{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;font-size:.75rem;color:var(--feltMuted);max-width:100%}
+.hist span{white-space:nowrap;border:1px solid color-mix(in srgb,var(--feltMuted) 40%,transparent);border-radius:999px;padding:1px 8px}
+
+/* dice */
+.die{--s:44px;width:var(--s);height:var(--s);background:var(--bone);border-radius:calc(var(--s)*.2);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:calc(var(--s)*.14);box-shadow:inset 0 -3px 0 rgba(0,0,0,.14),0 2px 4px rgba(0,0,0,.25);flex:none}
+.die span{display:block;border-radius:50%;margin:calc(var(--s)*.035)}
+.die span.on{background:var(--pip)}
+.die.sm{--s:26px}.die.md{--s:34px}.die.lg{--s:52px}
+.die.match{box-shadow:0 0 0 3px var(--brass),0 2px 4px rgba(0,0,0,.25)}
+.die.dim{opacity:.35}
+.die.hid{background:color-mix(in srgb,var(--bone) 25%,var(--felt2));box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--bone) 35%,transparent)}
+.die.roll{animation:roll .5s ease-out}
+@keyframes roll{0%{transform:rotate(-30deg) scale(.6);opacity:0}100%{transform:none;opacity:1}}
+.hand{display:flex;flex-direction:column;align-items:center;gap:6px}
+.hand .dice{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+/* controls */
+.controls{display:flex;flex-direction:column;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.faces{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.faces button{border:0;background:none;padding:3px;border-radius:10px;cursor:pointer}
+.faces button[aria-pressed="true"]{box-shadow:0 0 0 3px var(--brass)}
+.faces button:disabled{opacity:.3;cursor:default}
+.actrow{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
+.btn.bid{background:var(--ink);color:var(--bg);border-color:var(--ink);min-width:150px}
+.btn.liar{background:var(--liar);color:#fff;border-color:var(--liar);font-family:var(--display);font-weight:400;font-size:1.1rem;letter-spacing:.02em}
+.odds{font-size:.8rem;color:var(--muted);text-align:center}
+
+/* reveal */
+.reveal{display:flex;flex-direction:column;gap:8px}
+.rv{display:flex;align-items:center;gap:8px;min-width:0}
+.rv .who{width:82px;flex:none;font-weight:800;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.rv .who i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.rv .dice{display:flex;gap:4px;flex-wrap:wrap}
+.rv .waiting{font-size:.8rem;color:var(--feltMuted)}
+
+.seats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.seat{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.seat .top{display:flex;align-items:center;gap:6px;min-width:0}
+.seat .top i{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.seat .nm{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.seat .x{margin-left:auto;border:0;background:none;color:var(--muted);font-size:1.05rem;cursor:pointer}
+.seat .acts{display:flex;gap:6px;flex-wrap:wrap}
+.seat .acts button{flex:1 1 auto;font:inherit;font-size:.8rem;font-weight:800;padding:5px 7px;border-radius:7px;border:1px solid var(--c);color:var(--c);background:none;cursor:pointer}
+.seat select{font-size:.82rem;padding:4px 6px}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:9px;font-weight:800;max-width:calc(100% - 32px);z-index:5}
+.rules{font-size:.9rem;color:var(--muted)} .rules summary{cursor:pointer;font-weight:800;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.die.roll{animation:none}}
+@media (max-width:420px){
+  h1{font-size:1.45rem} .tabs button{font-size:.75rem;padding:6px 9px}
+  .die{--s:40px}.die.lg{--s:46px}.die.md{--s:30px}.die.sm{--s:22px}
+  .bidline{font-size:2rem}.players{grid-template-columns:repeat(auto-fill,minmax(88px,1fr))}
+  .faces{gap:3px}.faces button{padding:2px}
+  .rv .who{width:66px}
+}
+</style>
+<script src="../assets/peerjs.min.js"></script>
+<script src="../assets/net.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Liar's Dice</h1>
+    <div class="tabs" role="group" aria-label="Game mode">
+      <button id="tabLocal" type="button" aria-pressed="true">vs Computer</button>
+      <button id="tabOnline" type="button" aria-pressed="false">Online</button>
+    </div>
+  </header>
+
+  <!-- local setup -->
+  <section id="localSetup" class="panel">
+    <h2>New game</h2>
+    <div class="row">
+      <label class="lbl" for="lName">Your name</label>
+      <input id="lName" type="text" maxlength="16" value="You">
+    </div>
+    <div class="row">
+      <div class="field"><span class="lbl" id="oppLbl">Opponents</span>
+        <div class="stepper" role="group" aria-labelledby="oppLbl"><button id="oppMinus" type="button" aria-label="Fewer opponents">−</button><output id="oppCount">3</output><button id="oppPlus" type="button" aria-label="More opponents">+</button></div></div>
+      <div class="field"><label class="lbl" for="lLevel">Level</label>
+        <select id="lLevel"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="lWild" checked> Ones are wild (count as any face)</label>
+    <div class="row"><button id="lStart" class="btn primary" type="button">Deal the dice</button></div>
+  </section>
+
+  <!-- online lobby -->
+  <section id="lobby" class="panel" hidden>
+    <p id="onlineNote" class="note" hidden></p>
+    <div class="row" id="nameRow">
+      <label class="lbl" for="oName">Your name</label>
+      <input id="oName" type="text" maxlength="16" placeholder="Type a name, then take a seat">
+    </div>
+    <div class="row" id="lobbyOpts">
+      <div class="field"><span class="lbl" id="seatLbl">Seats</span>
+        <div class="stepper" role="group" aria-labelledby="seatLbl"><button id="sMinus" type="button" aria-label="Fewer seats">−</button><output id="sCount">3</output><button id="sPlus" type="button" aria-label="More seats">+</button></div></div>
+      <label class="chk"><input type="checkbox" id="oWild"> Ones are wild</label>
+    </div>
+    <div class="seats" id="seats"></div>
+    <div class="row"><button id="oStart" class="btn primary" type="button">Start game</button><span class="lbl" id="lobbyHint"></span></div>
+  </section>
+
+  <!-- the table -->
+  <section id="tableWrap" hidden>
+    <div class="table">
+      <div class="players" id="players"></div>
+      <div class="center" id="center"></div>
+      <div class="hand" id="hand"></div>
+    </div>
+  </section>
+
+  <section id="controls" class="controls" hidden>
+    <div class="actrow">
+      <span class="lbl">How many</span>
+      <div class="stepper" role="group" aria-label="Quantity"><button id="qMinus" type="button" aria-label="Fewer">−</button><output id="qOut">1</output><button id="qPlus" type="button" aria-label="More">+</button></div>
+    </div>
+    <div class="faces" id="faces" role="group" aria-label="Face"></div>
+    <div class="odds" id="odds"></div>
+    <div class="actrow">
+      <button id="bidBtn" class="btn bid" type="button">Bid</button>
+      <button id="liarBtn" class="btn liar" type="button">Liar!</button>
+    </div>
+  </section>
+
+  <div class="row" id="footRow">
+    <button id="nextBtn" class="btn primary" type="button" hidden>Next round</button>
+    <button id="newBtn" class="btn" type="button">New game</button>
+    <button id="leaveBtn" class="btn" type="button" hidden>Leave seat</button>
+  </div>
+
+  <details class="rules">
+    <summary>How to play</summary>
+    <p>Everyone has five dice hidden under a cup. On your turn, bid on how many dice of one face are on the whole table, counting everyone's dice, for example "four 5s". Each bid must be higher: more dice, or the same number of a higher face.</p>
+    <p>If you think the last bid is too high, call <b>Liar!</b>. All dice are shown. If the bid was wrong, the bidder loses a die; if it was right, the caller loses a die. Lose all your dice and you're out. Last player with dice wins.</p>
+    <p>With <b>ones wild</b>, every 1 counts as whatever face was bid, and you can't bid on 1s.</p>
+    <p><b>Online:</b> each player opens this page, takes a seat, and the dice are rolled privately on each player's own device. Keep the page open during the game so your dice can be shown when someone calls Liar. Computer players are run by the first person seated.</p>
+  </details>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+async function lockDoc(ref,holder){ // wait briefly for another player's change instead of dropping this one
+  const end=Date.now()+3000;
+  for(;;){ const l=await ref.acquire({holder,ttlMs:1000}); if(l.acquired||Date.now()>end) return l;
+    await new Promise(r=>setTimeout(r,150+Math.random()*150)); }
+}
+
+const $=id=>document.getElementById(id);
+const COLORS=[0,1,2,3,4,5].map(i=>`var(--c${i})`);
+const BOTS=["Esteban","Mira","Old Joe","Kasra","Nell","Bart"];
+const LEVELS={easy:"Easy",medium:"Medium",hard:"Hard"};
+const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+const FACE_WORD={1:"1s",2:"2s",3:"3s",4:"4s",5:"5s",6:"6s"};
+function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2800);}
+const roll=n=>Array.from({length:n},()=>1+Math.floor(Math.random()*6)).sort((a,b)=>a-b);
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+function dieEl(face,cls=""){
+  const d=document.createElement("div"); d.className="die "+cls;
+  if(face){ d.setAttribute("role","img"); d.setAttribute("aria-label",`die showing ${face}`); }
+  for(let i=0;i<9;i++){ const s=document.createElement("span"); if(face&&PIPS[face].includes(i)) s.className="on"; d.append(s); }
+  return d;
+}
+const bidText=b=>`${b.q} × ${FACE_WORD[b.f]}`;
+const matches=(d,f,wild)=>d===f||(wild&&d===1&&f!==1);
+
+// ---------- odds + computer brain ----------
+function binomTail(n,p,k){ if(k<=0) return 1; if(k>n) return 0; let s=0,c=1;
+  for(let i=0;i<=n;i++){ if(i>0) c=c*(n-i+1)/i; if(i>=k) s+=c*Math.pow(p,i)*Math.pow(1-p,n-i); } return s; }
+function legalFaces(wild){ return wild?[2,3,4,5,6]:[1,2,3,4,5,6]; }
+function isRaise(bid,q,f){ return !bid || q>bid.q || (q===bid.q&&f>bid.f); }
+function minQ(bid,f){ return !bid?1:(f>bid.f?bid.q:bid.q+1); }
+function aiDecide({hand,total,bid,history,wild,level,me}){
+  const faces=legalFaces(wild), n=total-hand.length;
+  const own=f=>hand.filter(d=>matches(d,f,wild)).length;
+  const base=f=>(wild&&f!==1)?1/3:1/6;
+  const p=f=>{ if(level!=="hard") return base(f); const others=history.filter(b=>b.by!==me&&b.f===f).length; return Math.min(.6,base(f)+.05*others); };
+  const noise=()=>level==="easy"?(Math.random()-.5)*.5:level==="medium"?(Math.random()-.5)*.12:0;
+  const prob=(q,f)=>binomTail(n,p(f),q-own(f));
+  const opts=[];
+  for(const f of faces){ const m=minQ(bid,f); for(let q=m;q<=Math.min(total,m+2);q++) opts.push({q,f,pr:prob(q,f)+noise()}); }
+  if(!bid){
+    const f=faces.reduce((a,b)=>own(b)>own(a)||(own(b)===own(a)&&Math.random()<.5)?b:a);
+    let q=1; for(let k=1;k<=total;k++) if(prob(k,f)>=(level==="easy"?.45:.62)) q=k;
+    if(Math.random()<.2&&q>1) q--;
+    return {type:"bid",q,f};
+  }
+  const pTrue=prob(bid.q,bid.f)+noise();
+  if(!opts.length) return {type:"liar"};
+  const safe=opts.filter(o=>o.pr>=.5).sort((a,b)=>a.q-b.q||b.pr-a.pr);
+  let best=opts.reduce((a,b)=>b.pr>a.pr?b:a);
+  let pick=safe.length?safe[0]:best;
+  const bluff=level!=="easy"&&Math.random()<(level==="hard"?.12:.08);
+  if(bluff){ const cheap=opts.filter(o=>o.q===minQ(bid,o.f)&&o.pr>.3); if(cheap.length) pick=rand(cheap); }
+  if((1-pTrue)>pick.pr+(level==="hard"?.03:0) && pTrue<.55) return {type:"liar"};
+  return {type:"bid",q:pick.q,f:pick.f};
+}
+
+// ---------- shared round logic (works on a plain state object) ----------
+// st: {counts[], turn, bid, history[], call, reveal[], result, phase, wild, seats/players}
+const alive=(st,i)=>st.counts[i]>0;
+function nextAlive(st,i){ const P=st.counts.length; for(let k=1;k<=P;k++){ const j=(i+k)%P; if(alive(st,j)) return j; } return i; }
+function doBid(st,seat,q,f){
+  if(st.phase!=="bidding"||st.turn!==seat) return false;
+  if(!isRaise(st.bid,q,f)||q<1||q>st.counts.reduce((a,b)=>a+b,0)) return false;
+  if(st.wild&&f===1) return false;
+  st.bid={q,f,by:seat}; st.history=[...(st.history||[]),{q,f,by:seat}]; st.turn=nextAlive(st,seat); return true;
+}
+function doCall(st,seat){
+  if(st.phase!=="bidding"||st.turn!==seat||!st.bid) return false;
+  st.phase="reveal"; st.call={by:seat,bid:st.bid}; st.reveal=st.counts.map(()=>null); return true;
+}
+function tryFinish(st){
+  if(st.phase!=="reveal") return false;
+  for(let i=0;i<st.counts.length;i++) if(alive(st,i)&&!st.reveal[i]) return false;
+  const b=st.call.bid; let count=0;
+  st.reveal.forEach((d,i)=>{ if(d&&alive(st,i)) count+=d.filter(x=>matches(x,b.f,st.wild)).length; });
+  const truthful=count>=b.q, loser=truthful?st.call.by:b.by;
+  st.counts=st.counts.slice(); st.counts[loser]--;
+  const left=st.counts.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
+  st.result={count,truthful,loser,caller:st.call.by,bidder:b.by,bid:b,out:st.counts[loser]===0};
+  if(left.length===1){ st.phase="over"; st.winner=left[0]; }
+  else { st.phase="result"; st.result.nextTurn=st.counts[loser]>0?loser:nextAlive(st,loser); }
+  return true;
+}
+function startRound(st){
+  st.round=(st.round||0)+1; st.phase="bidding"; st.bid=null; st.history=[]; st.call=null; st.reveal=st.counts.map(()=>null);
+  st.turn=st.result?st.result.nextTurn:st.turn; st.result=null;
+}
+
+// ---------- local game ----------
+let mode="local";
+let L={ phase:"setup", opp:3 };
+let localTimer=null, localKey=null;
+function startLocal(){
+  const n=L.opp, names=[($("lName").value.trim()||"You").slice(0,16)];
+  const pool=BOTS.slice().sort(()=>Math.random()-.5);
+  for(let i=0;i<n;i++) names.push(pool[i]);
+  L={ phase:"bidding", opp:n, level:$("lLevel").value, wild:$("lWild").checked, names, ai:names.map((_,i)=>i>0),
+      counts:names.map(()=>5), hands:names.map(()=>roll(5)), turn:Math.floor(Math.random()*names.length), bid:null, history:[], call:null, reveal:null, result:null, round:1 };
+  L.reveal=L.counts.map(()=>null);
+  sel.q=null; render();
+}
+function localAct(kind,q,f,seat){
+  if(kind==="bid"){ if(!doBid(L,seat,q,f)) return; }
+  else if(kind==="liar"){ if(!doCall(L,seat)) return; L.reveal=L.hands.map((h,i)=>alive(L,i)?h.slice():null); tryFinish(L); }
+  render();
+}
+function localNext(){
+  if(L.phase!=="result") return;
+  startRound(L); L.hands=L.counts.map(c=>roll(c)); sel.q=null; render();
+}
+function scheduleLocal(){
+  let key=null, fn=null, delay=0;
+  if(L.phase==="bidding"&&L.ai[L.turn]){ key="b"+L.round+":"+L.history.length; delay=900+Math.random()*700;
+    fn=()=>{ const s=L.turn; const d=aiDecide({hand:L.hands[s],total:L.counts.reduce((a,b)=>a+b,0),bid:L.bid,history:L.history,wild:L.wild,level:L.level,me:s});
+      localAct(d.type,d.q,d.f,s); }; }
+  else if(L.phase==="result"&&!alive(L,0)){ key="n"+L.round; delay=2600; fn=localNext; }
+  if(key===localKey) return; clearTimeout(localTimer); localKey=key; if(fn) localTimer=setTimeout(()=>{localKey=null;fn();},delay);
+}
+
+// ---------- online game ----------
+let O={ available:null, me:null, ref:null, handRef:null, aiRef:null, doc:null, busy:false, readOnly:false,
+        hand:null, aiHands:null, rolling:false, aiRolling:false, timers:{}, pending:{P:3,wild:true} };
+const gid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const freshLobby=(seats,P,wild)=>({ game:gid(), P, wild:!!wild, seats:Array.from({length:P},(_,i)=>(seats&&seats[i])||null), phase:"lobby",
+  round:0, counts:Array(P).fill(5), turn:0, bid:null, history:[], call:null, reveal:Array(P).fill(null), result:null, winner:null });
+function oSeat(){ const d=O.doc; if(!d||!O.me) return null; const i=d.seats.findIndex(s=>s&&!s.ai&&s.id===O.me); return i<0?null:i; }
+function hostSeat(d){ return d?d.seats.findIndex(s=>s&&!s.ai):-1; }
+const iAmHost=()=>{ const d=O.doc; const m=oSeat(); return m!=null&&hostSeat(d)===m; };
+async function editDoc(fn){
+  if(O.busy) return false; O.busy=true; render(); let ok=false;
+  try{
+    const lease=await lockDoc(O.ref,O.me);
+    if(!lease.acquired){ return false; }
+    const snap=await O.ref.get();
+    const d=snap.exists?JSON.parse(JSON.stringify(snap.data())):freshLobby(null,O.pending.P,O.pending.wild);
+    if(fn(d)===false) return false;
+    await O.ref.set(d); O.doc=d; ok=true;
+  }catch(e){ handleErr(e); }
+  finally{ O.busy=false; render(); }
+  return ok;
+}
+function handleErr(e){
+  if(e&&e.code==="invalid_argument"){ O.readOnly=true; toast("That didn't go through. Reload the page and rejoin the room."); }
+  else if(e&&e.code==="unavailable") toast("Connection hiccup. Try again.");
+  else toast("That didn't go through. Try again.");
+  render();
+}
+const myName=()=>($("oName").value.trim()||"Player").slice(0,16);
+function sit(p){ const name=myName(); return editDoc(d=>{ if(d.phase!=="lobby"){toast("A game is running. Wait for it to end.");return false;}
+  if(d.seats[p]){toast("That seat was just taken.");return false;}
+  d.seats=d.seats.map(s=>s&&!s.ai&&s.id===O.me?null:s); d.seats[p]={id:O.me,name}; }); }
+function setSeat(p,v){ return editDoc(d=>{ if(d.phase!=="lobby") return false; d.seats[p]=v; }); }
+function resizeSeats(P){ return editDoc(d=>{ if(d.phase!=="lobby") return false; P=Math.max(2,Math.min(6,P));
+  d.seats=Array.from({length:P},(_,i)=>d.seats[i]||null); d.P=P; d.counts=Array(P).fill(5); d.reveal=Array(P).fill(null); }); }
+function oStart(){ return editDoc(d=>{ if(d.phase!=="lobby"||!d.seats.every(Boolean)||hostSeat(d)<0) return false;
+  d.counts=Array(d.P).fill(5); d.turn=Math.floor(Math.random()*d.P); d.result=null; d.round=0; startRound(d); }); }
+function oBid(q,f){ const m=oSeat(); return editDoc(d=>doBid(d,m,q,f)); }
+function oLiar(){ const m=oSeat(); return editDoc(d=>doCall(d,m)); }
+function oNext(){ return editDoc(d=>{ if(d.phase!=="result") return false; startRound(d); }); }
+function oNew(){ return editDoc(d=>{ Object.assign(d,freshLobby(d.seats,d.P,d.wild)); }); }
+function oLeave(){ const m=oSeat(); return editDoc(d=>{
+  if(d.phase==="lobby"){ d.seats[m]=null; return; }
+  if(d.phase==="over"){ Object.assign(d,freshLobby(d.seats.map((s,i)=>i===m?null:s),d.P,d.wild)); return; }
+  d.counts[m]=0; d.seats[m]={...d.seats[m],left:true};
+  if(d.phase==="bidding"&&d.turn===m) d.turn=nextAlive(d,m);
+  const left=d.counts.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
+  if(left.length<=1){ d.phase="over"; d.winner=left[0]??null; }
+  else if(d.phase==="reveal") tryFinish(d);
+}); }
+
+function later(name,key,delay,fn){ const t=O.timers[name]; if(t&&t.key===key) return; if(t) clearTimeout(t.id);
+  O.timers[name]={key,id:setTimeout(()=>{ O.timers[name]=null; fn(); },delay)}; }
+function clearLater(name){ const t=O.timers[name]; if(t){clearTimeout(t.id);O.timers[name]=null;} }
+async function syncHands(){
+  const d=O.doc; if(!d||!["bidding","reveal"].includes(d.phase)||O.readOnly) return;
+  const key=d.game+":"+d.round, m=oSeat();
+  if(m!=null&&alive(d,m)&&O.hand?.key!==key&&!O.rolling&&O.handRef){
+    O.rolling=true;
+    try{ const s=await O.handRef.get(); let h=s.exists?s.data():null;
+      if(!h||h.key!==key||!Array.isArray(h.dice)||h.dice.length!==d.counts[m]){ h={key,dice:roll(d.counts[m])}; await O.handRef.set(h); }
+      O.hand=h; }catch(e){}
+    O.rolling=false; render();
+  }
+  if(iAmHost()&&d.seats.some((s,i)=>s&&s.ai&&alive(d,i))&&O.aiHands?.key!==key&&!O.aiRolling&&O.aiRef){
+    O.aiRolling=true;
+    try{ const s=await O.aiRef.get(); let h=s.exists?s.data():null;
+      if(!h||h.key!==key){ const hands={}; d.seats.forEach((s,i)=>{ if(s&&s.ai&&alive(d,i)) hands[i]=roll(d.counts[i]); }); h={key,hands}; await O.aiRef.set(h); }
+      O.aiHands=h; }catch(e){}
+    O.aiRolling=false; render();
+  }
+}
+function automate(){
+  const d=O.doc; if(mode!=="online"||!d||O.readOnly) return;
+  syncHands();
+  const m=oSeat(), key=d.game+":"+d.round;
+  // show my dice when Liar is called
+  if(d.phase==="reveal"&&m!=null&&alive(d,m)&&!d.reveal[m]&&O.hand?.key===key){
+    later("reveal",key+":"+m,300,()=>editDoc(x=>{ if(x.phase!=="reveal"||x.game+":"+x.round!==key||x.reveal[m]) return false;
+      x.reveal[m]=O.hand.dice.slice(); tryFinish(x); }));
+  }
+  if(!iAmHost()){ clearLater("ai"); clearLater("aireveal"); clearLater("next"); return; }
+  const aiKey=O.aiHands?.key===key;
+  if(d.phase==="reveal"&&aiKey&&d.seats.some((s,i)=>s&&s.ai&&alive(d,i)&&!d.reveal[i])){
+    later("aireveal",key,500,()=>editDoc(x=>{ if(x.phase!=="reveal"||x.game+":"+x.round!==key) return false;
+      x.seats.forEach((s,i)=>{ if(s&&s.ai&&alive(x,i)&&!x.reveal[i]) x.reveal[i]=O.aiHands.hands[i]||roll(x.counts[i]); }); tryFinish(x); }));
+  }
+  const ts=d.seats[d.turn];
+  if(d.phase==="bidding"&&ts&&ts.ai&&aiKey){
+    const k=key+":"+d.history.length+":"+d.turn;
+    later("ai",k,1000+Math.random()*800,()=>{
+      const x=O.doc; if(!x||x.game+":"+x.round!==key||x.phase!=="bidding"||x.history.length+":"+x.turn!==k.split(":").slice(2).join(":")) return;
+      const s=x.turn, hand=O.aiHands.hands[s]||[];
+      const dec=aiDecide({hand,total:x.counts.reduce((a,b)=>a+b,0),bid:x.bid,history:x.history,wild:x.wild,level:x.seats[s].ai,me:s});
+      editDoc(y=>{ if(y.phase!=="bidding"||y.turn!==s||y.history.length!==x.history.length) return false;
+        return dec.type==="liar"?doCall(y,s):doBid(y,s,dec.q,dec.f); });
+    });
+  }
+  if(d.phase==="result") later("next",key,7000,()=>{ if(O.doc?.phase==="result"&&O.doc.game+":"+O.doc.round===key) oNext(); });
+}
+const within=(p,ms)=>Promise.race([Promise.resolve(p),new Promise(r=>setTimeout(()=>r(null),ms))]);
+async function connectOnline(){
+  if(O.available!==null) return;
+  try{
+    const [db,user]=await Promise.all([within(window.claude?.use?.("db"),3600000),within(window.claude?.use?.("user"),3600000)]);
+    const me=user?await user.id():null;
+    if(!db){ O.available=false; note("Online play couldn't start. Reload the page to try again."); render(); return; }
+    O.available=true; O.me=me; O.ref=db.doc("liars/main");
+    if(me){ O.handRef=db.doc(`data/users/${me}/hand`); O.aiRef=db.doc(`data/users/${me}/aihands`); }
+    if(!me) note("Reload the page to rejoin the room.");
+    else if(user&&(await user.can("data.write"))===false){ O.readOnly=true; note("That didn't go through. Reload the page and rejoin the room."); }
+    else $("onlineNote").hidden=true;
+    O.ref.onSnapshot(s=>{
+      if(O.busy&&s.metadata.hasPendingWrites) return;
+      const d=s.exists?s.data():null;
+      const prev=O.doc; O.doc=d&&Array.isArray(d.seats)?d:null;
+      if(O.doc&&(!prev||prev.round!==O.doc.round||prev.game!==O.doc.game)) sel.q=null;
+      render();
+    },e=>handleErr(e));
+  }catch(e){ O.available=false; note("Online play couldn't connect. You can still play the computer."); }
+  render();
+}
+function note(m){ const n=$("onlineNote"); n.textContent=m; n.hidden=false; }
+
+// ---------- one view of the table for both modes ----------
+function tableView(){
+  if(mode==="local"){
+    if(L.phase==="setup") return null;
+    return { st:L, names:L.names, ai:L.ai.map(a=>a?L.level:null), me:0, myHand:alive(L,0)?L.hands[0]:null, host:true,
+      act:(k,q,f)=>localAct(k,q,f,0), next:localNext, left:L.names.map(()=>false) };
+  }
+  const d=O.doc; if(!d||d.phase==="lobby") return null;
+  const m=oSeat(), key=d.game+":"+d.round;
+  return { st:d, names:d.seats.map((s,i)=>s?s.name:`Seat ${i+1}`), ai:d.seats.map(s=>s&&s.ai?s.ai:null), me:m,
+    myHand:m!=null&&alive(d,m)&&O.hand?.key===key?O.hand.dice:null, rolling:m!=null&&alive(d,m)&&O.hand?.key!==key,
+    act:(k,q,f)=>k==="bid"?oBid(q,f):oLiar(), next:oNext, left:d.seats.map(s=>!!(s&&s.left)) };
+}
+
+// ---------- rendering ----------
+const sel={q:null,f:null};
+function render(){
+  $("tabLocal").setAttribute("aria-pressed",mode==="local"); $("tabOnline").setAttribute("aria-pressed",mode==="online");
+  $("localSetup").hidden=!(mode==="local"&&L.phase==="setup");
+  $("oppCount").textContent=L.opp; $("oppMinus").disabled=L.opp<=1; $("oppPlus").disabled=L.opp>=5;
+  renderLobby();
+  const v=tableView();
+  $("tableWrap").hidden=!v;
+  if(!v){ $("controls").hidden=true; $("nextBtn").hidden=true; $("leaveBtn").hidden=!(mode==="online"&&oSeat()!=null);
+    $("newBtn").hidden=mode==="local"||oSeat()==null; if(mode==="local") clearTimeout(localTimer); return; }
+  $("newBtn").hidden=mode==="online"&&v.me==null;
+  $("leaveBtn").hidden=!(mode==="online"&&v.me!=null);
+  renderTable(v);
+  if(mode==="local") scheduleLocal(); else automate();
+}
+function renderLobby(){
+  const show=mode==="online"&&!(O.doc&&O.doc.phase!=="lobby");
+  $("lobby").hidden=!show; if(!show) return;
+  const d=O.doc, P=d?d.P:O.pending.P, seats=d?d.seats:Array(P).fill(null), m=oSeat();
+  const canAct=O.available&&O.me&&!O.readOnly, canCfg=canAct&&(m!=null||!d);
+  $("nameRow").hidden=!canAct||m!=null;
+  $("lobbyOpts").hidden=!O.available;
+  $("sCount").textContent=P; $("sMinus").disabled=!canCfg||P<=2; $("sPlus").disabled=!canCfg||P>=6;
+  $("oWild").checked=d?!!d.wild:O.pending.wild; $("oWild").disabled=!canCfg;
+  const box=$("seats"); box.textContent="";
+  if(!O.available){ $("oStart").hidden=true; $("lobbyHint").textContent=O.available===null?"Connecting…":""; return; }
+  for(let i=0;i<P;i++){ const s=seats[i]; const el=document.createElement("div"); el.className="seat"; el.style.setProperty("--c",COLORS[i]);
+    const top=document.createElement("div"); top.className="top"; top.append(document.createElement("i"));
+    const nm=document.createElement("span"); nm.className="nm"; nm.textContent=s?(s.name+(m===i?" (you)":"")):"Empty seat"; top.append(nm);
+    if(s&&canCfg&&(s.ai||m===i)){ const x=document.createElement("button"); x.type="button"; x.className="x"; x.textContent="×"; x.setAttribute("aria-label","Clear seat");
+      x.addEventListener("click",()=>s.ai?setSeat(i,null):oLeave()); top.append(x); }
+    el.append(top);
+    if(s&&s.ai&&canCfg){ const sl=document.createElement("select"); sl.id="lv"+i; sl.setAttribute("aria-label",`${s.name} level`);
+      Object.entries(LEVELS).forEach(([k,t])=>{const o=document.createElement("option");o.value=k;o.textContent="Computer · "+t;sl.append(o);});
+      sl.value=s.ai; sl.addEventListener("change",()=>setSeat(i,{...s,ai:sl.value})); el.append(sl); }
+    else if(s&&s.ai){ const t=document.createElement("span"); t.className="lbl"; t.textContent="Computer · "+LEVELS[s.ai]; el.append(t); }
+    if(!s&&canAct){ const a=document.createElement("div"); a.className="acts";
+      const b=document.createElement("button"); b.type="button"; b.textContent=m!=null?"Move here":"Sit here"; b.addEventListener("click",()=>sit(i)); a.append(b);
+      if(canCfg){ const c=document.createElement("button"); c.type="button"; c.textContent="Add computer";
+        c.addEventListener("click",()=>setSeat(i,{ai:"medium",name:BOTS[i%BOTS.length]})); a.append(c); }
+      el.append(a); }
+    box.append(el); }
+  const full=seats.every(Boolean), human=seats.some(s=>s&&!s.ai);
+  $("oStart").hidden=m==null; $("oStart").disabled=!full||!human||O.busy;
+  $("lobbyHint").textContent=m==null?(canAct?"Take a seat to play":""):(!full?"Fill every seat to start":"");
+}
+function renderTable(v){
+  const st=v.st, P=st.counts.length, total=st.counts.reduce((a,b)=>a+b,0);
+  // players
+  const pb=$("players"); pb.textContent="";
+  for(let i=0;i<P;i++){ const el=document.createElement("div");
+    el.className="pl"+(st.phase==="bidding"&&st.turn===i?" turn":"")+(alive(st,i)?"":" out"); el.style.setProperty("--c",COLORS[i]);
+    const nm=document.createElement("div"); nm.className="nm"; nm.append(document.createElement("i"));
+    nm.append(document.createTextNode(v.names[i]+(v.me===i&&mode==="online"?" (you)":""))); el.append(nm);
+    const c=document.createElement("div"); c.className="cnt"; for(let k=0;k<st.counts[i];k++) c.append(document.createElement("b")); el.append(c);
+    const sub=document.createElement("div"); sub.className="sub";
+    const last=[...(st.history||[])].reverse().find(b=>b.by===i);
+    sub.textContent=!alive(st,i)?(v.left[i]?"Left":"Out"):(st.phase==="bidding"&&st.turn===i?(v.ai[i]?"Thinking…":"To bid"):(last?"Bid "+bidText(last):(v.ai[i]?"Computer · "+LEVELS[v.ai[i]]:"")));
+    el.append(sub); pb.append(el); }
+  // center
+  const cen=$("center"); cen.textContent="";
+  const status=document.createElement("div"); status.className="status";
+  if(st.phase==="bidding"){
+    if(st.bid){ const line=document.createElement("div"); line.className="bidline"; line.append(document.createTextNode(st.bid.q+" ×")); line.append(dieEl(st.bid.f,"md"));
+      const by=document.createElement("div"); by.className="bidby"; by.textContent=`bid by ${v.names[st.bid.by]} · ${total} dice on the table`; cen.append(line,by); }
+    else { const by=document.createElement("div"); by.className="bidby"; by.textContent=`Round ${st.round} · ${total} dice on the table${st.wild?" · ones wild":""}`; cen.append(by); }
+    status.textContent= v.me===st.turn ? (st.bid?"Your turn. Raise or call Liar!":"Your turn. Open the bidding") : `${v.names[st.turn]} is ${v.ai[st.turn]?"thinking":"deciding"}…`;
+    cen.append(status);
+    if(st.history&&st.history.length>1){ const h=document.createElement("div"); h.className="hist";
+      st.history.slice(0,-1).slice(-8).forEach(b=>{ const s=document.createElement("span"); s.textContent=`${v.names[b.by]}: ${bidText(b)}`; h.append(s); }); cen.append(h); }
+  } else {
+    const b=st.call.bid, res=st.result;
+    const line=document.createElement("div"); line.className="bidby";
+    line.textContent=`${v.names[st.call.by]} called Liar on ${v.names[b.by]}'s ${bidText(b)}`; cen.append(line);
+    const rv=document.createElement("div"); rv.className="reveal";
+    for(let i=0;i<P;i++){ if(!alive(st,i)&&!(res&&res.loser===i)) continue;
+      const row=document.createElement("div"); row.className="rv"; row.style.setProperty("--c",COLORS[i]);
+      const who=document.createElement("div"); who.className="who"; who.append(document.createElement("i")); who.append(document.createTextNode(v.names[i])); row.append(who);
+      const dd=document.createElement("div"); dd.className="dice";
+      const dice=st.reveal[i];
+      if(dice) dice.forEach(x=>dd.append(dieEl(x,"sm "+(matches(x,b.f,st.wild)?"match":"dim"))));
+      else { const w=document.createElement("span"); w.className="waiting"; w.textContent="Lifting cup…"; dd.append(w); }
+      row.append(dd); rv.append(row); }
+    cen.append(rv);
+    if(res){
+      status.classList.add(v.me!=null&&res.loser===v.me?"bad":"good");
+      const what=`There ${res.count===1?"was":"were"} ${res.count} ${FACE_WORD[b.f]}${st.wild&&b.f!==1?" (counting 1s)":""}. `;
+      const loseTxt=v.me===res.loser?(res.out?"You're out!":"You lose a die."):`${v.names[res.loser]} ${res.out?"is out!":"loses a die."}`;
+      status.textContent=what+loseTxt;
+      if(st.phase==="over"){ const w=document.createElement("div"); w.className="status good"; w.style.fontFamily="var(--display)"; w.style.fontSize="1.5rem";
+        w.textContent=v.me===st.winner?"You win the game!":`${v.names[st.winner]} wins the game!`; cen.append(status,w); }
+      else cen.append(status);
+    } else { status.textContent="Revealing dice…"; cen.append(status); }
+  }
+  // my hand
+  const hand=$("hand"); hand.textContent="";
+  if(st.phase!=="bidding"){ /* everyone's dice are shown in the reveal */ }
+  else if(v.me!=null&&alive(st,v.me)){
+    const lab=document.createElement("div"); lab.className="lbl"; lab.style.color="var(--feltMuted)"; lab.textContent="Your dice";
+    const dd=document.createElement("div"); dd.className="dice";
+    if(v.myHand){ const hk=st.round+":"+v.myHand.join(""); v.myHand.forEach(x=>dd.append(dieEl(x,"lg"+(hand.dataset.k!==hk?" roll":""))));
+      hand.dataset.k=hk; }
+    else for(let k=0;k<st.counts[v.me];k++) dd.append(dieEl(null,"lg hid"));
+    hand.append(lab,dd);
+  } else if(v.me!=null){ const t=document.createElement("div"); t.className="lbl"; t.style.color="var(--feltMuted)"; t.textContent="You're out. Watching the rest of the game."; hand.append(t); }
+  // controls
+  const myTurn=st.phase==="bidding"&&v.me===st.turn&&!(mode==="online"&&O.busy);
+  $("controls").hidden=!(st.phase==="bidding"&&v.me!=null&&alive(st,v.me));
+  if(!$("controls").hidden) renderControls(v,myTurn,total);
+  $("nextBtn").hidden=!(st.phase==="result"&&(v.me!=null&&(mode==="local"?alive(st,0):true)));
+  $("nextBtn").disabled=mode==="online"&&O.busy;
+}
+function renderControls(v,myTurn,total){
+  const st=v.st, faces=legalFaces(st.wild);
+  if(sel.f==null||!faces.includes(sel.f)) sel.f=faces[faces.length-1];
+  // default selection: smallest legal raise on the chosen face
+  const lo=minQ(st.bid,sel.f);
+  if(sel.q==null||sel.q<lo) sel.q=Math.min(total,lo);
+  if(sel.q>total) sel.q=total;
+  $("qOut").textContent=sel.q;
+  $("qMinus").disabled=!myTurn||sel.q<=Math.max(1,minQ(st.bid,6)); $("qPlus").disabled=!myTurn||sel.q>=total;
+  const fb=$("faces"); fb.textContent="";
+  faces.forEach(f=>{ const b=document.createElement("button"); b.type="button"; b.setAttribute("aria-pressed",String(sel.f===f));
+    b.setAttribute("aria-label",`Face ${f}`); b.disabled=!myTurn||!isRaise(st.bid,sel.q,f); b.append(dieEl(f,"md"));
+    b.addEventListener("click",()=>{ sel.f=f; render(); }); fb.append(b); });
+  const legal=isRaise(st.bid,sel.q,sel.f);
+  $("bidBtn").disabled=!myTurn||!legal; $("bidBtn").textContent=`Bid ${sel.q} × ${FACE_WORD[sel.f]}`;
+  $("liarBtn").disabled=!myTurn||!st.bid;
+  // odds hint from what you can see
+  if(v.myHand){ const n=total-v.myHand.length, own=v.myHand.filter(d=>matches(d,sel.f,st.wild)).length, p=(st.wild&&sel.f!==1)?1/3:1/6;
+    const pr=binomTail(n,p,sel.q-own); $("odds").textContent=`You hold ${own} that count. Chance this bid is true: ${Math.round(pr*100)}%`; }
+  else $("odds").textContent=v.rolling?"Rolling your dice…":"";
+}
+
+// ---------- controls ----------
+function setMode(m){ mode=m; if(m==="online") connectOnline(); render(); }
+$("tabLocal").addEventListener("click",()=>setMode("local"));
+$("tabOnline").addEventListener("click",()=>setMode("online"));
+$("oppMinus").addEventListener("click",()=>{ L.opp=Math.max(1,L.opp-1); render(); });
+$("oppPlus").addEventListener("click",()=>{ L.opp=Math.min(5,L.opp+1); render(); });
+$("lStart").addEventListener("click",startLocal);
+$("qMinus").addEventListener("click",()=>{ sel.q--; const v=tableView(); if(v&&!isRaise(v.st.bid,sel.q,sel.f)){ const fs=legalFaces(v.st.wild).filter(f=>isRaise(v.st.bid,sel.q,f)); if(fs.length) sel.f=fs[fs.length-1]; } render(); });
+$("qPlus").addEventListener("click",()=>{ sel.q++; render(); });
+$("bidBtn").addEventListener("click",()=>{ const v=tableView(); if(v) v.act("bid",sel.q,sel.f); });
+$("liarBtn").addEventListener("click",()=>{ const v=tableView(); if(v) v.act("liar"); });
+$("nextBtn").addEventListener("click",()=>{ const v=tableView(); if(v) v.next(); });
+$("newBtn").addEventListener("click",()=>{ if(mode==="local"){ clearTimeout(localTimer); localKey=null; L={phase:"setup",opp:L.opp}; render(); } else oNew(); });
+$("leaveBtn").addEventListener("click",oLeave);
+$("oStart").addEventListener("click",oStart);
+$("sMinus").addEventListener("click",()=>{ const P=(O.doc?O.doc.P:O.pending.P)-1; if(O.doc) resizeSeats(P); else { O.pending.P=Math.max(2,P); render(); } });
+$("sPlus").addEventListener("click",()=>{ const P=(O.doc?O.doc.P:O.pending.P)+1; if(O.doc) resizeSeats(P); else { O.pending.P=Math.min(6,P); render(); } });
+$("oWild").addEventListener("change",e=>{ const v=e.target.checked; if(O.doc) editDoc(d=>{ if(d.phase!=="lobby") return false; d.wild=v; }); else O.pending.wild=v; });
+try{ const n=localStorage.getItem("ld-name"); if(n){ $("oName").value=n; $("lName").value=n; } }catch(e){}
+["oName","lName"].forEach(id=>$(id).addEventListener("change",()=>{ try{ localStorage.setItem("ld-name",$(id).value.trim()); }catch(e){} }));
+
+function start(){
+  try{ const s=window.claude?.hot?.data; if(s&&s.L&&s.L.phase) L=s.L; }catch(e){}
+  try{ window.claude?.hot?.snapshot?.(()=>({L})); }catch(e){}
+  render();
+}
+start();
+</script>
+<a class="kgn-home" href="../">More games</a>
+</body>
+</html>

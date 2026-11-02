@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en" data-game="minesweeper">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Race friends or a computer rival to clear the same minefield fastest.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff5a1f'/%3E%3Ccircle cx='10' cy='10' r='3' fill='white'/%3E%3Ccircle cx='22' cy='10' r='3' fill='white'/%3E%3Ccircle cx='10' cy='22' r='3' fill='white'/%3E%3Ccircle cx='22' cy='22' r='3' fill='white'/%3E%3C/svg%3E">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}.kgn-home{display:block;text-align:center;padding:8px 16px 28px;font:600 14px system-ui,sans-serif;color:inherit;opacity:.7}</style>
+<title>Minesweeper Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Figtree:wght@400;600;800&display=swap">
+<style>
+/* Layout: race strip (lanes with progress) on top, the shared minefield in the middle, controls and results below */
+:root{
+  --bg:#eceff3; --panel:#ffffff; --ink:#141a22; --muted:#5d6878; --line:#cdd4de;
+  --tile:#9fb0c4; --tileHi:#b9c7d8; --tileLo:#7f93aa; --open:#f3f5f8; --openLine:#dde3ea;
+  --signal:#ff5a1f; --ok:#1f9d63; --bad:#d63a2f;
+  --n1:#2459c9; --n2:#1d8a4a; --n3:#d0352a; --n4:#5b2fb0; --n5:#9a3a12; --n6:#0f8a8a; --n7:#141a22; --n8:#6b7380;
+  --l0:#2f6fd6; --l1:#e0602b; --l2:#8a46c9; --l3:#1f9d63; --l4:#c43a7e; --l5:#b8860b;
+  --display:"Chakra Petch","Arial Narrow",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1117; --panel:#151b24; --ink:#e6ebf2; --muted:#93a0b2; --line:#2a3443;
+  --tile:#3b4b60; --tileHi:#4c5f78; --tileLo:#2b384a; --open:#1b2230; --openLine:#263042;
+  --signal:#ff7a45; --ok:#4fd08f; --bad:#ff6b5e;
+  --n1:#7aa7ff; --n2:#5fd38f; --n3:#ff7b70; --n4:#c39bff; --n5:#ffb26b; --n6:#5fd6d6; --n7:#e6ebf2; --n8:#9aa6b6;
+  --l0:#7aa7ff; --l1:#ff8a5c; --l2:#c79bff; --l3:#4fd08f; --l4:#ff86c0; --l5:#f0c14b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1117; --panel:#151b24; --ink:#e6ebf2; --muted:#93a0b2; --line:#2a3443;
+  --tile:#3b4b60; --tileHi:#4c5f78; --tileLo:#2b384a; --open:#1b2230; --openLine:#263042;
+  --signal:#ff7a45; --ok:#4fd08f; --bad:#ff6b5e;
+  --n1:#7aa7ff; --n2:#5fd38f; --n3:#ff7b70; --n4:#c39bff; --n5:#ffb26b; --n6:#5fd6d6; --n7:#e6ebf2; --n8:#9aa6b6;
+  --l0:#7aa7ff; --l1:#ff8a5c; --l2:#c79bff; --l3:#4fd08f; --l4:#ff86c0; --l5:#f0c14b; color-scheme:dark}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:620px;margin:0 auto;padding-block:14px 36px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+h1{font-family:var(--display);font-weight:700;font-size:1.7rem;line-height:1;margin:0;white-space:nowrap;min-width:0;text-transform:uppercase;letter-spacing:.01em;font-style:italic}
+h1 b{color:var(--signal)}
+.tabs{display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px;flex:none}
+.tabs button{border:0;background:none;color:var(--muted);font:inherit;font-weight:800;font-size:.8rem;padding:6px 11px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.lbl{font-size:.72rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.field{display:flex;align-items:center;gap:8px}
+select,input[type=text]{font:inherit;font-size:.95rem;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);min-width:0}
+input[type=text]{flex:1 1 140px}
+.btn{font:inherit;font-weight:800;padding:9px 15px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--signal);color:#fff;border-color:var(--signal)}
+.btn:disabled{opacity:.4;cursor:default}
+.note{font-size:.88rem;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:9px 11px;margin:0}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+/* lanes */
+.lanes{display:flex;flex-direction:column;gap:6px}
+.lane{display:grid;grid-template-columns:minmax(0,84px) minmax(0,1fr) 62px;gap:8px;align-items:center;font-size:.85rem}
+.lane .who{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px;min-width:0}
+.lane .who i{width:8px;height:8px;border-radius:2px;background:var(--c);flex:none;transform:skewX(-12deg)}
+.track{height:12px;border-radius:3px;background:var(--openLine);overflow:hidden;position:relative}
+.track b{position:absolute;inset:0 auto 0 0;background:repeating-linear-gradient(115deg,var(--c) 0 8px,color-mix(in srgb,var(--c) 75%,var(--panel)) 8px 12px);border-radius:3px;transition:width .35s ease-out}
+.lane .t{font-family:var(--display);font-weight:700;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lane.done .t{color:var(--ok)} .lane.boom .t{color:var(--bad)}
+
+/* hud + board */
+.hud{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stat{font-family:var(--display);font-weight:700;font-size:1.35rem;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px;min-width:0}
+.stat small{font-family:var(--body);font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.stat .pen{color:var(--bad);font-size:.95rem}
+.modeSw{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex:none}
+.modeSw button{font:inherit;font-weight:800;font-size:.85rem;padding:7px 12px;border:0;background:var(--panel);color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px}
+.modeSw button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.flagIco{display:inline-block;width:10px;height:12px;position:relative}
+.flagIco::before{content:"";position:absolute;left:1px;top:0;bottom:0;width:2px;background:currentColor}
+.flagIco::after{content:"";position:absolute;left:3px;top:0;border-left:7px solid var(--signal);border-top:3.5px solid transparent;border-bottom:3.5px solid transparent}
+.boardWrap{position:relative}
+.board{display:grid;gap:2px;width:100%;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-touch-callout:none}
+.c{aspect-ratio:1;max-width:100%;border:0;padding:0;margin:0;border-radius:3px;background:linear-gradient(160deg,var(--tileHi),var(--tile) 55%,var(--tileLo));
+  font-family:var(--display);font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer;position:relative;font-size:var(--fs,15px)}
+.c:focus-visible{outline:2px solid var(--signal);outline-offset:0;z-index:1}
+.c.o{background:var(--open);box-shadow:inset 0 0 0 1px var(--openLine);cursor:default}
+.c.start{box-shadow:inset 0 0 0 2px var(--signal)}
+.c.f::after{content:"";position:absolute;left:34%;top:20%;border-left:calc(var(--fs,15px)*.75) solid var(--signal);border-top:calc(var(--fs,15px)*.32) solid transparent;border-bottom:calc(var(--fs,15px)*.32) solid transparent}
+.c.f::before{content:"";position:absolute;left:30%;top:20%;bottom:20%;width:2px;background:var(--ink)}
+.c.m{background:var(--open)}
+.c.m::after{content:"";position:absolute;inset:26%;border-radius:50%;background:var(--ink);box-shadow:0 0 0 2px var(--open),0 0 0 3px var(--ink)}
+.c.hitm{background:var(--bad)}
+.c.hitm::after{background:#111;box-shadow:none}
+.c.wrongf{opacity:.5}
+.n1{color:var(--n1)}.n2{color:var(--n2)}.n3{color:var(--n3)}.n4{color:var(--n4)}.n5{color:var(--n5)}.n6{color:var(--n6)}.n7{color:var(--n7)}.n8{color:var(--n8)}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:color-mix(in srgb,var(--bg) 72%,transparent);border-radius:8px;text-align:center;padding:16px}
+.overlay .big{font-family:var(--display);font-weight:700;font-style:italic;font-size:3.6rem;line-height:1;color:var(--signal)}
+.overlay .msg{font-weight:800;font-size:1.05rem;text-wrap:balance}
+.flash{animation:flash .45s ease-out}
+@keyframes flash{0%{box-shadow:0 0 0 4px var(--bad)}100%{box-shadow:0 0 0 0 transparent}}
+.results{display:flex;flex-direction:column;gap:4px}
+.res{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:baseline;font-size:.95rem}
+.res .pos{font-family:var(--display);font-weight:700;font-style:italic;color:var(--muted)}
+.res:first-child .pos{color:var(--signal)}
+.res .nm{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res .tm{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums}
+.best{font-size:.82rem;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:9px;font-weight:800;max-width:calc(100% - 32px);z-index:5}
+.rules{font-size:.9rem;color:var(--muted)} .rules summary{cursor:pointer;font-weight:800;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.track b{transition:none}.flash{animation:none}}
+h1{overflow:hidden;text-overflow:ellipsis}
+@media (max-width:420px){h1{font-size:1.05rem}.tabs button{font-size:.75rem;padding:6px 9px}.board{gap:1.5px}.lane{grid-template-columns:minmax(0,70px) minmax(0,1fr) 56px}.stat{font-size:1.15rem}}
+</style>
+<script src="../assets/peerjs.min.js"></script>
+<script src="../assets/net.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Mine<b>sweeper</b> Race</h1>
+    <div class="tabs" role="group" aria-label="Game mode">
+      <button id="tabSolo" type="button" aria-pressed="true">vs Computer</button>
+      <button id="tabOnline" type="button" aria-pressed="false">Online</button>
+    </div>
+  </header>
+
+  <section id="soloSetup" class="panel">
+    <div class="row">
+      <div class="field"><label class="lbl" for="sDiff">Field</label>
+        <select id="sDiff"><option value="easy">Easy · 9×9 · 10 mines</option><option value="medium" selected>Medium · 12×12 · 24 mines</option><option value="hard">Hard · 16×16 · 40 mines</option></select></div>
+      <div class="field"><label class="lbl" for="sOpp">Rival</label>
+        <select id="sOpp"><option value="none">No rival (time trial)</option><option value="easy">Computer · Easy</option><option value="medium" selected>Computer · Medium</option><option value="hard">Computer · Hard</option></select></div>
+      <div class="field"><label class="lbl" for="sHit">Hit a mine</label>
+        <select id="sHit"><option value="penalty" selected>+10 seconds</option><option value="out">You're out</option></select></div>
+    </div>
+    <div class="row"><button id="sStart" class="btn primary" type="button">Start race</button><span class="best" id="bestTxt"></span></div>
+  </section>
+
+  <section id="lobby" class="panel" hidden>
+    <p id="onlineNote" class="note" hidden></p>
+    <div class="row" id="joinRow">
+      <label class="lbl" for="oName">Your name</label>
+      <input id="oName" type="text" maxlength="16" placeholder="Type a name">
+      <button id="joinBtn" class="btn primary" type="button">Join race</button>
+    </div>
+    <div class="row" id="lobbyOpts">
+      <div class="field"><label class="lbl" for="oDiff">Field</label>
+        <select id="oDiff"><option value="easy">Easy · 9×9</option><option value="medium">Medium · 12×12</option><option value="hard">Hard · 16×16</option></select></div>
+      <div class="field"><label class="lbl" for="oHit">Hit a mine</label>
+        <select id="oHit"><option value="penalty">+10 seconds</option><option value="out">You're out</option></select></div>
+    </div>
+    <div class="lanes" id="lobbyList"></div>
+    <div class="row"><button id="oStart" class="btn primary" type="button">Start race for everyone</button><button id="leaveBtn" class="btn" type="button">Leave</button><span class="lbl" id="lobbyHint"></span></div>
+  </section>
+
+  <section id="race" hidden>
+    <div class="lanes" id="lanes"></div>
+  </section>
+
+  <section id="play" class="panel" hidden>
+    <div class="hud">
+      <div class="stat"><small>Mines</small><span id="minesLeft">0</span></div>
+      <div class="stat"><small>Time</small><span id="timer">0.0</span><span class="pen" id="pen"></span></div>
+      <div class="modeSw" role="group" aria-label="Tap action">
+        <button id="mDig" type="button" aria-pressed="true">Dig</button>
+        <button id="mFlag" type="button" aria-pressed="false"><span class="flagIco" aria-hidden="true"></span>Flag</button>
+      </div>
+    </div>
+    <div class="boardWrap"><div class="board" id="board" role="grid" aria-label="Minefield"></div><div class="overlay" id="overlay" hidden></div></div>
+    <div class="best">Long-press or right-click to flag. Tap a number with all its mines flagged to clear around it.</div>
+  </section>
+
+  <section id="results" class="panel" hidden>
+    <div class="lbl">Results</div>
+    <div class="results" id="resList"></div>
+  </section>
+
+  <div class="row">
+    <button id="againBtn" class="btn primary" type="button" hidden>Race again</button>
+    <button id="menuBtn" class="btn" type="button" hidden>Change settings</button>
+  </div>
+
+  <details class="rules">
+    <summary>How to play</summary>
+    <p>Every racer gets the exact same minefield. The start square (outlined) is opened for you when the countdown ends. Numbers show how many mines touch that square. Open every safe square to finish; the fastest time wins.</p>
+    <p>Switch between <b>Dig</b> and <b>Flag</b>, or long-press a square to flag it. Tap a number whose mines are all flagged to open the squares around it.</p>
+    <p><b>Online:</b> friends open this page, type a name and join. Anyone who has joined can start the race. Each player's time is measured on their own device.</p>
+  </details>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const DIFF={easy:{r:9,c:9,m:10,fs:17,name:"Easy"},medium:{r:12,c:12,m:24,fs:15,name:"Medium"},hard:{r:16,c:16,m:40,fs:12,name:"Hard"}};
+const LANES=[0,1,2,3,4,5].map(i=>`var(--l${i})`);
+const AI_SPEED={easy:1500,medium:850,hard:480};
+const PENALTY=10000;
+function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600);}
+const fmt=ms=>(ms/1000).toFixed(1);
+
+// ---------- board ----------
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function makeBoard(diff,seed){
+  const D=DIFF[diff], R=D.r, C=D.c, N=R*C, rnd=mulberry(seed);
+  const start=Math.floor(R/2-1+rnd()*2)*C+Math.floor(C/2-1+rnd()*2);
+  const sr=Math.floor(start/C), sc=start%C;
+  const cand=[]; for(let i=0;i<N;i++){ const r=Math.floor(i/C),c=i%C; if(Math.abs(r-sr)>1||Math.abs(c-sc)>1) cand.push(i); }
+  for(let i=cand.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [cand[i],cand[j]]=[cand[j],cand[i]]; }
+  const mine=new Array(N).fill(false); cand.slice(0,D.m).forEach(i=>mine[i]=true);
+  const nb=[]; for(let i=0;i<N;i++){ const r=Math.floor(i/C),c=i%C,a=[];
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){ if(!dr&&!dc) continue; const rr=r+dr,cc=c+dc; if(rr>=0&&cc>=0&&rr<R&&cc<C) a.push(rr*C+cc); } nb.push(a); }
+  const num=mine.map((m,i)=>m?-1:nb[i].filter(j=>mine[j]).length);
+  return {diff,R,C,N,M:D.m,mine,nb,num,start,safe:N-D.m};
+}
+// a racer's view of the board: 0 hidden, 1 open, 2 flag, 3 exploded mine (counts as flagged)
+function newRacer(b){ return {b,st:new Uint8Array(b.N),opened:0,pen:0,status:"playing",finishMs:null,hits:0}; }
+function openCell(R,i,acc){
+  const b=R.b; if(R.st[i]!==0) return;
+  if(b.mine[i]){ R.st[i]=3; R.hits++; acc.hit=i; return; }
+  const stack=[i];
+  while(stack.length){ const k=stack.pop(); if(R.st[k]!==0||b.mine[k]) continue; R.st[k]=1; R.opened++; acc.n++;
+    if(b.num[k]===0) for(const j of b.nb[k]) if(R.st[j]===0) stack.push(j); }
+}
+function act(R,i,kind){ // returns {n, hit}
+  const b=R.b, acc={n:0,hit:null};
+  if(R.status!=="playing") return acc;
+  if(kind==="flag"){ if(R.st[i]===0) R.st[i]=2; else if(R.st[i]===2) R.st[i]=0; return acc; }
+  if(R.st[i]===1&&b.num[i]>0){ const fl=b.nb[i].filter(j=>R.st[j]===2||R.st[j]===3).length;
+    if(fl===b.num[i]) for(const j of b.nb[i]) if(R.st[j]===0) openCell(R,j,acc); return acc; }
+  if(R.st[i]===0) openCell(R,i,acc);
+  return acc;
+}
+
+// ---------- computer racer ----------
+function aiAct(R,level){
+  const b=R.b, st=R.st;
+  const unknown=i=>st[i]===0, flagged=i=>st[i]===2||st[i]===3;
+  for(let pass=0;pass<60;pass++){
+    let flaggedSomething=false;
+    for(let i=0;i<b.N;i++){ if(st[i]!==1||b.num[i]<=0) continue;
+      const U=b.nb[i].filter(unknown); if(!U.length) continue; const F=b.nb[i].filter(flagged).length, need=b.num[i]-F;
+      if(need===0) return act(R,U[0],"dig");
+      if(need===U.length){ U.forEach(j=>st[j]=2); flaggedSomething=true; } }
+    if(flaggedSomething) continue;
+    if(level!=="easy"){
+      const info=[]; for(let i=0;i<b.N;i++){ if(st[i]!==1||b.num[i]<=0) continue; const U=b.nb[i].filter(unknown); if(!U.length) continue;
+        info.push({U,need:b.num[i]-b.nb[i].filter(flagged).length}); }
+      for(const A of info) for(const B of info){ if(A===B||A.U.length>=B.U.length) continue;
+        if(!A.U.every(x=>B.U.includes(x))) continue; const D=B.U.filter(x=>!A.U.includes(x)), k=B.need-A.need;
+        if(k===0&&D.length) return act(R,D[0],"dig");
+        if(k===D.length&&D.length){ D.forEach(j=>st[j]=2); flaggedSomething=true; break; } }
+      if(flaggedSomething) continue;
+    }
+    break;
+  }
+  const U=[]; for(let i=0;i<b.N;i++) if(st[i]===0) U.push(i);
+  if(!U.length) return {n:0,hit:null};
+  if(level==="easy") return act(R,U[Math.floor(Math.random()*U.length)],"dig");
+  const flags=st.reduce((a,s)=>a+(s===2||s===3?1:0),0);
+  const density=(b.M-flags)/U.length;
+  let best=null,bp=2;
+  for(const i of U){ let p=density; for(const j of b.nb[i]){ if(st[j]!==1||b.num[j]<=0) continue;
+      const Uj=b.nb[j].filter(unknown); const need=b.num[j]-b.nb[j].filter(flagged).length; p=Math.max(p,need/Uj.length); }
+    if(level==="hard"&&b.nb[i].every(j=>st[j]===0)) p-=0.001;
+    if(p<bp){bp=p;best=i;} }
+  return act(R,best,"dig");
+}
+
+// ---------- local race ----------
+let mode="solo";
+let S=null; // {board, me, ai, aiLevel, hitMode, phase:"count"|"race"|"done", t0, countEnd}
+let tapMode="dig", loopTimer=null, aiTimer=null;
+function bestKey(d){return "msr-best-"+d;}
+function getBest(d){ try{ const v=+localStorage.getItem(bestKey(d)); return v>0?v:null; }catch(e){ return null; } }
+function setBest(d,ms){ try{ const b=getBest(d); if(!b||ms<b){ localStorage.setItem(bestKey(d),String(ms)); return true; } }catch(e){} return false; }
+function soloStart(){
+  const diff=$("sDiff").value, opp=$("sOpp").value, hit=$("sHit").value;
+  const board=makeBoard(diff,(Math.random()*2**31)|0);
+  S={kind:"solo",board,diff,hitMode:hit,me:newRacer(board),ai:opp==="none"?null:newRacer(board),aiLevel:opp,phase:"count",countEnd:performance.now()+3000,t0:null,newBest:false};
+  tapMode="dig"; buildBoard(board); render(); tick();
+}
+function beginRace(){
+  S.phase="race"; S.t0=performance.now();
+  const a=act(S.me,S.board.start,"dig"); afterMyAct(a);
+  if(S.ai){ act(S.ai,S.board.start,"dig"); scheduleAI(); }
+}
+function elapsed(R){ if(!S||S.t0==null) return 0; const end=R.finishMs!=null?R.finishMs:performance.now()-S.t0; return end+R.pen; }
+function finishCheck(R){
+  if(R.status!=="playing") return;
+  if(R.opened===S.board.safe){ R.status="done"; R.finishMs=performance.now()-S.t0; }
+}
+function applyHit(R,hit){
+  if(hit==null) return;
+  if(S.hitMode==="out"){ R.status="boom"; R.finishMs=performance.now()-S.t0; }
+  else R.pen+=PENALTY;
+}
+function afterMyAct(a){
+  if(a.hit!=null){ applyHit(S.me,a.hit); const el=$("board"); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+    if(S.me.status==="playing") toast("Boom! +10 seconds"); }
+  finishCheck(S.me);
+  if(S.me.status!=="playing"){
+    if(S.kind==="solo"&&S.me.status==="done") S.newBest=setBest(S.diff,Math.round(elapsed(S.me)));
+    if(S.kind==="online") pushProgress(true);
+  } else if(S.kind==="online") pushProgress(false);
+  maybeDone(); paintBoard(); render();
+}
+function scheduleAI(){
+  clearTimeout(aiTimer); if(!S||!S.ai||S.ai.status!=="playing"||S.phase==="done") return;
+  aiTimer=setTimeout(()=>{ if(!S||!S.ai) return; const a=aiAct(S.ai,S.aiLevel); applyHit(S.ai,a.hit); finishCheck(S.ai); maybeDone(); render(); scheduleAI(); },
+    AI_SPEED[S.aiLevel]*(0.6+Math.random()*0.8));
+}
+function maybeDone(){
+  if(!S||S.kind!=="solo") return;
+  const racers=[S.me,S.ai].filter(Boolean);
+  if(S.me.status!=="playing"&&(!S.ai||S.ai.status!=="playing"||S.me.status==="boom")){ S.phase="done"; clearTimeout(aiTimer); }
+  else if(S.me.status!=="playing"&&S.ai&&S.ai.status==="playing"){ /* let the rival finish so you see its time */ }
+}
+function tick(){
+  clearInterval(loopTimer);
+  loopTimer=setInterval(()=>{
+    if(!S){ clearInterval(loopTimer); return; }
+    if(S.phase==="count"&&performance.now()>=S.countEnd) beginRace();
+    renderLive();
+  },100);
+}
+
+// ---------- board UI ----------
+let cells=[];
+function buildBoard(b){
+  const el=$("board"); el.textContent=""; el.style.gridTemplateColumns=`repeat(${b.C},minmax(0,1fr))`;
+  el.style.setProperty("--fs",DIFF[b.diff].fs+"px");
+  cells=[];
+  for(let i=0;i<b.N;i++){ const c=document.createElement("button"); c.type="button"; c.className="c"; c.dataset.i=i;
+    c.setAttribute("aria-label",`Row ${Math.floor(i/b.C)+1}, column ${i%b.C+1}`); el.append(c); cells.push(c); }
+  paintBoard();
+}
+function paintBoard(){
+  if(!S) return; const R=S.me, b=S.board, over=R.status!=="playing";
+  for(let i=0;i<b.N;i++){ const c=cells[i], s=R.st[i]; let cls="c", txt="";
+    if(s===1){ cls+=" o"; if(b.num[i]>0){ txt=b.num[i]; cls+=" n"+b.num[i]; } }
+    else if(s===2){ cls+=" f"; if(over&&!b.mine[i]) cls+=" wrongf"; }
+    else if(s===3){ cls+=" m hitm"; }
+    else if(over&&b.mine[i]&&R.status==="boom") cls+=" m";
+    if(i===b.start&&s===0) cls+=" start";
+    if(c.className!==cls) c.className=cls; if(c.textContent!==String(txt)) c.textContent=txt; }
+}
+// press handling: tap = current mode, long-press / right-click = flag
+let press=null;
+$("board").addEventListener("pointerdown",e=>{
+  const c=e.target.closest(".c"); if(!c||e.button===2) return;
+  press={i:+c.dataset.i,long:false,t:setTimeout(()=>{ if(press){ press.long=true; userAct(press.i,"flag"); try{navigator.vibrate?.(25);}catch(_){} } },380)};
+});
+const endPress=()=>{ if(press){ clearTimeout(press.t); } };
+$("board").addEventListener("pointerup",e=>{ if(!press) return; endPress(); const p=press; press=null; if(p.long) return;
+  const c=e.target.closest(".c"); if(!c||+c.dataset.i!==p.i) return; userAct(p.i,tapMode); });
+$("board").addEventListener("pointerleave",()=>{ endPress(); press=null; });
+$("board").addEventListener("pointercancel",()=>{ endPress(); press=null; });
+$("board").addEventListener("contextmenu",e=>{ e.preventDefault(); const c=e.target.closest(".c"); if(c) userAct(+c.dataset.i,"flag"); });
+$("board").addEventListener("keydown",e=>{ const c=e.target.closest(".c"); if(!c) return;
+  if(e.key==="f"||e.key==="F"){ e.preventDefault(); userAct(+c.dataset.i,"flag"); }
+  else if(e.key==="Enter"||e.key===" "){ e.preventDefault(); userAct(+c.dataset.i,tapMode); } });
+function userAct(i,kind){
+  if(!S||S.phase!=="race"||S.me.status!=="playing") return;
+  const R=S.me;
+  if(kind==="flag"&&R.st[i]===1) kind="dig"; // tapping a number in flag mode still clears around it
+  const a=act(R,i,kind);
+  if(kind==="flag"){ paintBoard(); renderLive(); return; }
+  afterMyAct(a);
+}
+$("mDig").addEventListener("click",()=>{ tapMode="dig"; render(); });
+$("mFlag").addEventListener("click",()=>{ tapMode="flag"; render(); });
+
+// ---------- online ----------
+let O={available:null,me:null,db:null,room:null,roomRef:null,players:[],myRef:null,busy:false,readOnly:false,joined:false,lastGame:null,pushT:null,pushing:false,pushAgain:false};
+function myName(){ return ($("oName").value.trim()||"Racer").slice(0,16); }
+const within=(p,ms)=>Promise.race([Promise.resolve(p),new Promise(r=>setTimeout(()=>r(null),ms))]);
+async function connectOnline(){
+  if(O.available!==null) return;
+  try{
+    const [db,user]=await Promise.all([within(window.claude?.use?.("db"),3600000),within(window.claude?.use?.("user"),3600000)]);
+    const me=user?await user.id():null;
+    if(!db){ O.available=false; note("Online play couldn't start. Reload the page to try again."); render(); return; }
+    O.available=true; O.db=db; O.me=me; O.roomRef=db.doc("race/main");
+    if(!me) note("Reload the page to rejoin the room.");
+    else if(user&&(await user.can("data.write"))===false){ O.readOnly=true; note("That didn't go through. Reload the page and rejoin the room."); }
+    else $("onlineNote").hidden=true;
+    if(me) O.myRef=O.roomRef.collection("players").doc(me);
+    O.roomRef.onSnapshot(s=>{ O.room=s.exists?s.data():null; onRoom(); },e=>handleErr(e));
+    O.roomRef.collection("players").onSnapshot(s=>{
+      O.players=s.docs.filter(x=>x.exists).map(x=>({id:x.id,...x.data()}));
+      O.joined=!!(me&&O.players.some(p=>p.id===me));
+      render(); },e=>handleErr(e));
+  }catch(e){ O.available=false; note("Online racing couldn't connect. You can still race the computer."); }
+  render();
+}
+function note(m){ const n=$("onlineNote"); n.textContent=m; n.hidden=false; }
+function handleErr(e){
+  if(e&&e.code==="invalid_argument"){ O.readOnly=true; toast("That didn't go through. Reload the page and rejoin the room."); }
+  else if(e&&e.code==="unavailable") toast("Connection hiccup. Try again.");
+  else toast("That didn't go through. Try again.");
+  render();
+}
+async function writeMe(data){ try{ await O.myRef.set(data); }catch(e){ handleErr(e); } }
+function myDoc(extra){ return {name:myName(),game:O.room?.game||null,status:"lobby",opened:0,safe:0,time:null,pen:0,...extra}; }
+async function join(){ if(!O.myRef) return; try{ localStorage.setItem("msr-name",myName()); }catch(e){} await writeMe(myDoc({})); }
+async function leave(){ if(!O.myRef) return; try{ await O.myRef.delete(); }catch(e){ handleErr(e); } if(S&&S.kind==="online"){ endLocal(); } render(); }
+async function startOnline(){
+  if(!O.joined||O.busy) return; O.busy=true; render();
+  try{ const d={game:Date.now().toString(36)+Math.random().toString(36).slice(2,6),seed:(Math.random()*2**31)|0,
+      diff:$("oDiff").value,hitMode:$("oHit").value,phase:"racing"};
+    await O.roomRef.set(d); }catch(e){ handleErr(e); }
+  O.busy=false; render();
+}
+async function saveRoomOpts(){
+  if(!O.joined) return;
+  const cur=O.room||{phase:"lobby"};
+  if(cur.phase==="racing"&&!raceOver()) return;
+  try{ await O.roomRef.set({...cur,diff:$("oDiff").value,hitMode:$("oHit").value}); }catch(e){ handleErr(e); }
+}
+function onRoom(){
+  const r=O.room;
+  if(r&&r.phase==="racing"&&r.game!==O.lastGame){
+    O.lastGame=r.game;
+    if(O.joined&&!O.readOnly){
+      const board=makeBoard(r.diff,r.seed);
+      S={kind:"online",board,diff:r.diff,hitMode:r.hitMode,game:r.game,me:newRacer(board),ai:null,phase:"count",countEnd:performance.now()+3000,t0:null};
+      tapMode="dig"; buildBoard(board); tick();
+      writeMe(myDoc({game:r.game,status:"playing",safe:board.safe}));
+    }
+  }
+  render();
+}
+function pushProgress(now){
+  if(!S||S.kind!=="online") return;
+  const send=async()=>{
+    if(O.pushing){ O.pushAgain=true; return; }
+    O.pushing=true;
+    const R=S.me;
+    await writeMe(myDoc({game:S.game,status:R.status,opened:R.opened,safe:S.board.safe,pen:R.pen,
+      time:R.status==="done"?Math.round(elapsed(R)):(R.status==="boom"?Math.round(elapsed(R)):null)}));
+    O.pushing=false; if(O.pushAgain){ O.pushAgain=false; send(); }
+  };
+  clearTimeout(O.pushT);
+  if(now) send(); else O.pushT=setTimeout(send,700);
+}
+function racers(){ return O.room?O.players.filter(p=>p.game===O.room.game&&p.status!=="lobby"):[]; }
+function raceOver(){ const rs=racers(); return O.room?.phase==="racing"&&rs.length>0&&rs.every(p=>p.status==="done"||p.status==="boom"); }
+function endLocal(){ clearInterval(loopTimer); clearTimeout(aiTimer); S=null; }
+
+// ---------- render ----------
+function lanesData(){
+  if(!S&&mode==="solo") return [];
+  if(mode==="solo"){
+    const out=[{name:"You",R:S.me,c:0}]; if(S.ai) out.push({name:"Computer",R:S.ai,c:1});
+    return out.map(x=>({name:x.name,c:x.c,frac:x.R.opened/S.board.safe,status:x.R.status,time:x.R.status==="playing"?(S.t0==null?0:elapsed(x.R)):elapsed(x.R),pen:x.R.pen,live:x.R.status==="playing"}));
+  }
+  return racers().map((p,k)=>{ const mine=p.id===O.me&&S&&S.kind==="online"&&S.game===p.game;
+    const R=mine?S.me:null;
+    return {name:p.name+(p.id===O.me?" (you)":""),c:k%6,frac:mine?R.opened/S.board.safe:(p.safe?p.opened/p.safe:0),
+      status:mine?R.status:p.status,time:mine?elapsed(R):p.time,pen:mine?R.pen:p.pen,live:mine&&R.status==="playing"}; });
+}
+function renderLanes(){
+  const box=$("lanes"); const L=lanesData(); box.textContent="";
+  L.forEach(x=>{ const el=document.createElement("div"); el.className="lane "+(x.status==="done"?"done":x.status==="boom"?"boom":""); el.style.setProperty("--c",LANES[x.c]);
+    const who=document.createElement("div"); who.className="who"; who.append(document.createElement("i")); who.append(document.createTextNode(x.name));
+    const tr=document.createElement("div"); tr.className="track"; const bar=document.createElement("b"); bar.style.width=Math.round(Math.min(1,x.frac)*100)+"%"; tr.append(bar);
+    const t=document.createElement("div"); t.className="t";
+    t.textContent=x.status==="done"?fmt(x.time):x.status==="boom"?"Boom":(x.time!=null&&x.live?fmt(x.time):Math.round(x.frac*100)+"%");
+    el.append(who,tr,t); box.append(el); });
+}
+function renderLive(){
+  if(!S) return;
+  const R=S.me, flags=R.st.reduce((a,s)=>a+(s===2||s===3?1:0),0);
+  $("minesLeft").textContent=S.board.M-flags;
+  $("timer").textContent=S.phase==="count"?"0.0":fmt(elapsed(R)-R.pen);
+  $("pen").textContent=R.pen?`+${R.pen/1000}s`:"";
+  const ov=$("overlay");
+  if(S.phase==="count"){ ov.hidden=false; const left=Math.ceil((S.countEnd-performance.now())/1000);
+    ov.innerHTML=""; const b=document.createElement("div"); b.className="big"; b.textContent=left>0?left:"Go!"; const m=document.createElement("div"); m.className="msg"; m.textContent="Same field for every racer";
+    ov.append(b,m); }
+  else if(R.status!=="playing"){ ov.hidden=false; ov.textContent="";
+    const b=document.createElement("div"); b.className="big"; b.style.color=R.status==="done"?"var(--ok)":"var(--bad)"; b.textContent=R.status==="done"?fmt(elapsed(R)):"Boom";
+    const m=document.createElement("div"); m.className="msg";
+    if(R.status==="done") m.textContent=(S.newBest?"New personal best! ":"Field cleared. ")+(R.pen?`Includes ${R.pen/1000}s of penalties.`:"");
+    else m.textContent="You hit a mine.";
+    ov.append(b,m); }
+  else ov.hidden=true;
+  renderLanes();
+  if(mode==="online") renderResults();
+}
+function renderResults(){
+  const show=mode==="online"?raceOver()||(S&&S.me.status!=="playing"&&racers().length>1):(S&&S.phase==="done"&&S.ai);
+  $("results").hidden=!show; if(!show) return;
+  let rows;
+  if(mode==="online") rows=racers().map(p=>({name:p.name+(p.id===O.me?" (you)":""),status:p.status,time:p.time,frac:p.safe?p.opened/p.safe:0}));
+  else rows=[{name:"You",R:S.me},{name:"Computer",R:S.ai}].map(x=>({name:x.name,status:x.R.status,time:x.R.status==="playing"?null:elapsed(x.R),frac:x.R.opened/S.board.safe}));
+  rows.sort((a,b)=>{ const rank=x=>x.status==="done"?0:x.status==="playing"?1:2; return rank(a)-rank(b)||(a.status==="done"?a.time-b.time:b.frac-a.frac); });
+  const box=$("resList"); box.textContent="";
+  rows.forEach((r,k)=>{ const el=document.createElement("div"); el.className="res";
+    const pos=document.createElement("span"); pos.className="pos"; pos.textContent=r.status==="done"?"#"+(k+1):"—";
+    const nm=document.createElement("span"); nm.className="nm"; nm.textContent=r.name;
+    const tm=document.createElement("span"); tm.className="tm"; tm.textContent=r.status==="done"?fmt(r.time)+"s":r.status==="boom"?`Boom · ${Math.round(r.frac*100)}%`:`Racing · ${Math.round(r.frac*100)}%`;
+    el.append(pos,nm,tm); box.append(el); });
+}
+function render(){
+  $("tabSolo").setAttribute("aria-pressed",mode==="solo"); $("tabOnline").setAttribute("aria-pressed",mode==="online");
+  $("mDig").setAttribute("aria-pressed",tapMode==="dig"); $("mFlag").setAttribute("aria-pressed",tapMode==="flag");
+  const inGame=S&&((mode==="solo"&&S.kind==="solo")||(mode==="online"&&S.kind==="online"));
+  $("soloSetup").hidden=!(mode==="solo"&&!inGame);
+  const b=getBest($("sDiff").value); $("bestTxt").textContent=b?`Your best on ${DIFF[$("sDiff").value].name}: ${fmt(b)}s`:"";
+  $("play").hidden=!inGame; $("race").hidden=!inGame;
+  // lobby
+  const showLobby=mode==="online"&&(!inGame||raceOver());
+  $("lobby").hidden=!showLobby;
+  if(showLobby){
+    const can=O.available&&O.me&&!O.readOnly;
+    $("joinRow").hidden=!can||O.joined; $("lobbyOpts").hidden=!O.available;
+    if(O.room){ if(document.activeElement!==$("oDiff")) $("oDiff").value=O.room.diff||"medium"; if(document.activeElement!==$("oHit")) $("oHit").value=O.room.hitMode||"penalty"; }
+    $("oDiff").disabled=$("oHit").disabled=!O.joined;
+    const list=$("lobbyList"); list.textContent="";
+    O.players.forEach((p,k)=>{ const el=document.createElement("div"); el.className="lane"; el.style.setProperty("--c",LANES[k%6]);
+      const who=document.createElement("div"); who.className="who"; who.append(document.createElement("i")); who.append(document.createTextNode(p.name+(p.id===O.me?" (you)":"")));
+      const s=document.createElement("div"); s.className="lbl"; s.textContent=p.game===O.room?.game&&p.status!=="lobby"?(p.status==="done"?"Finished":p.status==="boom"?"Boom":"Racing"):"Ready";
+      el.append(who,s,document.createElement("span")); list.append(el); });
+    $("oStart").hidden=!O.joined; $("leaveBtn").hidden=!O.joined; $("oStart").disabled=O.busy;
+    $("lobbyHint").textContent=!O.available?(O.available===null?"Connecting…":""):O.players.length?`${O.players.length} racer${O.players.length>1?"s":""} joined`:"No one has joined yet";
+  }
+  $("againBtn").hidden=!(mode==="solo"&&inGame&&S.phase!=="count"&&(S.me.status!=="playing"));
+  $("menuBtn").hidden=!(mode==="solo"&&inGame);
+  if(inGame){ paintBoard(); renderLive(); } else { $("results").hidden=true; if(mode==="online") renderResults(); }
+}
+
+// ---------- wiring ----------
+$("tabSolo").addEventListener("click",()=>{ mode="solo"; render(); });
+$("tabOnline").addEventListener("click",()=>{ mode="online"; connectOnline(); render(); });
+$("sStart").addEventListener("click",soloStart);
+$("sDiff").addEventListener("change",render);
+$("againBtn").addEventListener("click",soloStart);
+$("menuBtn").addEventListener("click",()=>{ endLocal(); render(); });
+$("joinBtn").addEventListener("click",join);
+$("leaveBtn").addEventListener("click",leave);
+$("oStart").addEventListener("click",startOnline);
+$("oDiff").addEventListener("change",saveRoomOpts);
+$("oHit").addEventListener("change",saveRoomOpts);
+try{ const n=localStorage.getItem("msr-name"); if(n) $("oName").value=n; }catch(e){}
+render();
+</script>
+<a class="kgn-home" href="../">More games</a>
+</body>
+</html>

@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en" data-game="dots">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Dots & Boxes for 2 to 6 players, against computer players or friends online.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232457c5'/%3E%3Ccircle cx='10' cy='10' r='3' fill='white'/%3E%3Ccircle cx='22' cy='10' r='3' fill='white'/%3E%3Ccircle cx='10' cy='22' r='3' fill='white'/%3E%3Ccircle cx='22' cy='22' r='3' fill='white'/%3E%3C/svg%3E">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}.kgn-home{display:block;text-align:center;padding:8px 16px 28px;font:600 14px system-ui,sans-serif;color:inherit;opacity:.7}</style>
+<title>Three-Way Dots</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: one column, a notebook page — settings, players strip, board, controls */
+:root{
+  --paper:#f6f8fb; --grid:#dde5f0; --ink:#1d2433; --muted:#5d6a80; --card:#ffffff; --line:#c3cedd;
+  --p0:#2457c5; --p1:#c8342b; --p2:#1d8a4b; --p3:#b86a00; --p4:#7a3fc2; --p5:#0f8585;
+  --display:"Caveat Brush","Comic Sans MS",cursive;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#1a2026; --grid:#252d36; --ink:#e9eef5; --muted:#9aa7b8; --card:#212932; --line:#3a4552;
+  --p0:#7ea6ff; --p1:#ff8a7a; --p2:#6fd99b; --p3:#ffc163; --p4:#c39bff; --p5:#5fd6d6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#1a2026; --grid:#252d36; --ink:#e9eef5; --muted:#9aa7b8; --card:#212932; --line:#3a4552;
+  --p0:#7ea6ff; --p1:#ff8a7a; --p2:#6fd99b; --p3:#ffc163; --p4:#c39bff; --p5:#5fd6d6; color-scheme:dark}
+html,body{min-height:100%}
+body{
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.45;
+}
+.wrap{max-width:600px;margin:0 auto;padding-block:20px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--display);font-weight:400;font-size:2.6rem;line-height:1;margin:0;text-wrap:balance}
+h1 span:nth-child(1){color:var(--p0)} h1 span:nth-child(2){color:var(--p1)} h1 span:nth-child(3){color:var(--p2)}
+.sub{margin:4px 0 0;color:var(--muted);font-size:.95rem}
+.tabs{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px;align-self:flex-start}
+.tabs button{border:0;background:none;color:var(--muted);font:inherit;font-weight:700;font-size:.9rem;padding:8px 14px;border-radius:999px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.settings{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.ctl{display:flex;align-items:center;gap:8px}
+.lbl{font-size:.75rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.stepper button{font:inherit;font-weight:700;font-size:1.1rem;width:34px;height:34px;border:0;background:none;color:var(--ink);cursor:pointer}
+.stepper button:disabled{opacity:.35;cursor:default}
+.stepper output{min-width:26px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+select{font:inherit;font-size:.9rem;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);max-width:100%}
+.settings .btn{margin-left:auto}
+.hint{margin:-6px 0 0;font-size:.82rem;color:var(--muted)}
+.seats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.seat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0;transition:box-shadow .2s,border-color .2s}
+.seat.turn{border-color:var(--c);box-shadow:0 0 0 2px var(--c)}
+.seat .top{display:flex;align-items:center;gap:6px;min-width:0}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--c);flex:none}
+.seat .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.seat .mid{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.seat .sc{font-family:var(--display);font-size:2rem;line-height:1;color:var(--c);font-variant-numeric:tabular-nums}
+.seat .tag{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right}
+.seat input{width:100%;min-width:0;font:inherit;font-weight:700;border:0;border-bottom:1px dashed var(--line);background:none;color:var(--ink);padding:2px 0}
+.seat select{font-size:.82rem;padding:4px 6px;width:100%}
+.seat .acts{display:flex;gap:6px;flex-wrap:wrap}
+.seat .acts button{flex:1 1 auto;font:inherit;font-size:.82rem;font-weight:700;border:1px solid var(--c);color:var(--c);background:none;border-radius:6px;padding:5px 6px;cursor:pointer}
+.seat .x{border:0;background:none;color:var(--muted);font:inherit;font-size:1rem;cursor:pointer;margin-left:auto;padding:0 2px;line-height:1}
+.status{font-family:var(--display);font-size:1.6rem;line-height:1.15;min-height:1.9rem;text-align:center;text-wrap:balance}
+.board{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 6px 24px -14px rgba(20,30,60,.35)}
+.board svg{display:block;width:100%;height:auto;touch-action:manipulation}
+.hit{stroke:transparent;stroke-width:22;stroke-linecap:round;cursor:pointer}
+.ghost{stroke:var(--line);stroke-width:3;stroke-dasharray:2 8;stroke-linecap:round;pointer-events:none}
+.hit:hover + .ghost,.hit:focus-visible + .ghost{stroke:var(--hc);stroke-dasharray:none;stroke-width:5;opacity:.55}
+.hit:focus{outline:none}
+.drawn{stroke-width:6;stroke-linecap:round}
+.last{animation:pop .5s ease-out}
+@keyframes pop{from{stroke-width:11}to{stroke-width:6}}
+.boxfill{opacity:.16}
+.boxmark{font-family:var(--display);font-size:30px;text-anchor:middle;dominant-baseline:central}
+.pt{fill:var(--ink)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row label{font-size:.85rem;color:var(--muted);font-weight:700}
+.row input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);min-width:0;flex:1 1 140px}
+.btn{font:inherit;font-weight:700;padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--p0);outline-offset:2px}
+.note{font-size:.88rem;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;margin:0}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:8px;font-weight:700;max-width:calc(100% - 32px);z-index:5}
+.rules{font-size:.9rem;color:var(--muted)}
+.rules summary{cursor:pointer;font-weight:700;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.last{animation:none}.seat{transition:none}}
+@media (max-width:420px){.seat .sc{font-size:1.6rem}h1{font-size:2.2rem}.settings .btn{margin-left:0}}
+</style>
+<script src="../assets/peerjs.min.js"></script>
+<script src="../assets/net.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span>Three</span>-<span>Way</span> <span>Dots</span></h1>
+    <p class="sub">Dots &amp; Boxes for 2 to 6 players. Close a box to claim it and go again.</p>
+  </header>
+
+  <div class="tabs" role="group" aria-label="Game mode">
+    <button id="tabLocal" type="button" aria-pressed="true">One device</button>
+    <button id="tabOnline" type="button" aria-pressed="false">Play online</button>
+  </div>
+
+  <div class="settings" id="settings">
+    <div class="ctl">
+      <span class="lbl" id="pLbl">Players</span>
+      <div class="stepper" role="group" aria-labelledby="pLbl">
+        <button id="pMinus" type="button" aria-label="Fewer players">−</button>
+        <output id="pCount">3</output>
+        <button id="pPlus" type="button" aria-label="More players">+</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label class="lbl" for="size">Board</label>
+      <select id="size">
+        <option value="3">3 × 3 · quick</option>
+        <option value="4">4 × 4</option>
+        <option value="5" selected>5 × 5</option>
+        <option value="6">6 × 6</option>
+        <option value="7">7 × 7 · long</option>
+      </select>
+    </div>
+    <button id="solo" class="btn" type="button">Solo vs AI</button>
+  </div>
+  <p class="hint" id="hint">Changing players or board size starts a new game.</p>
+
+  <div id="onlineBar" class="row" hidden>
+    <label for="myName">Your name</label>
+    <input id="myName" maxlength="20" placeholder="Type a name, then pick a seat">
+  </div>
+  <p id="onlineNote" class="note" hidden></p>
+
+  <section class="seats" id="seats" aria-label="Players"></section>
+  <div class="status" id="status" aria-live="polite"></div>
+  <div class="board"><svg id="svg" role="group" aria-label="Game board"></svg></div>
+
+  <div class="row">
+    <button id="newGame" class="btn primary" type="button">New game</button>
+    <button id="leave" class="btn" type="button" hidden>Leave seat</button>
+  </div>
+
+  <details class="rules">
+    <summary>How to play</summary>
+    <p>Take turns drawing one line between two neighbouring dots. If your line closes the fourth side of a box, the box is yours and you draw again. When every box is taken, the player with the most boxes wins.</p>
+    <p><b>AI players:</b> set any seat to Easy, Medium or Hard. Easy plays loosely, Medium never hands you a box if it can avoid it, and Hard also gives away the smallest chain when it's forced to.</p>
+    <p><b>Online:</b> each friend opens this page on their own device, types a name and picks a seat. Empty seats can be filled with AI. The game starts when every seat is filled. AI moves are made by the browsers of the seated players, so keep at least one of you on the page.</p>
+  </details>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+async function lockDoc(ref,holder){ // wait briefly for another player's change instead of dropping this one
+  const end=Date.now()+3000;
+  for(;;){ const l=await ref.acquire({holder,ttlMs:1000}); if(l.acquired||Date.now()>end) return l;
+    await new Promise(r=>setTimeout(r,150+Math.random()*150)); }
+}
+
+const S = 64, PAD = 22, MINP = 2, MAXP = 6;
+const COLORS = [0,1,2,3,4,5].map(i=>`var(--p${i})`);
+const BOT_NAMES = ["Rivet","Pixel","Sprocket","Gizmo","Bolt","Cog"];
+const LEVELS = {easy:"Easy", medium:"Medium", hard:"Hard"};
+const $ = id => document.getElementById(id);
+
+// ---------- game engine ----------
+function fresh(n,P){ return { n, P, h:Array((n+1)*n).fill(-1), v:Array(n*(n+1)).fill(-1), b:Array(n*n).fill(-1), turn:0, last:null, moves:0 }; }
+const hI=(g,r,c)=>r*g.n+c, vI=(g,r,c)=>r*(g.n+1)+c;
+function sides(g,r,c){ return (g.h[hI(g,r,c)]>=0)+(g.h[hI(g,r+1,c)]>=0)+(g.v[vI(g,r,c)]>=0)+(g.v[vI(g,r,c+1)]>=0); }
+function adjBoxes(g,k,i){
+  const n=g.n; let c2;
+  if(k==="h"){ const r=Math.floor(i/n), c=i%n; c2=[[r-1,c],[r,c]]; }
+  else { const r=Math.floor(i/(n+1)), c=i%(n+1); c2=[[r,c-1],[r,c]]; }
+  return c2.filter(([r,c])=>r>=0&&c>=0&&r<n&&c<n);
+}
+function applyMove(g,k,i){
+  const arr = k==="h"?g.h:g.v; if(arr[i]>=0) return null;
+  const p=g.turn;
+  const n = {...g, h:g.h.slice(), v:g.v.slice(), b:g.b.slice(), last:{k,i}, moves:(g.moves||0)+1};
+  (k==="h"?n.h:n.v)[i]=p;
+  let scored=false;
+  for(const [r,c] of adjBoxes(n,k,i)){ const bi=r*n.n+c; if(n.b[bi]<0 && sides(n,r,c)===4){ n.b[bi]=p; scored=true; } }
+  if(!scored) n.turn=(g.turn+1)%g.P;
+  return n;
+}
+const scores = g => Array.from({length:g.P},(_,p)=>g.b.filter(x=>x===p).length);
+const over = g => g.b.every(x=>x>=0);
+
+// ---------- AI ----------
+function openMoves(g){ const m=[]; g.h.forEach((o,i)=>{if(o<0)m.push(["h",i])}); g.v.forEach((o,i)=>{if(o<0)m.push(["v",i])}); return m; }
+const captures=(g,[k,i])=>adjBoxes(g,k,i).some(([r,c])=>sides(g,r,c)===3);
+const isSafe=(g,[k,i])=>adjBoxes(g,k,i).every(([r,c])=>sides(g,r,c)<2);
+function giveaway(g,m){
+  let s=applyMove(g,m[0],m[1]); let count=0;
+  for(;;){ const cap=openMoves(s).find(x=>captures(s,x)); if(!cap) break;
+    const before=s.b.filter(x=>x>=0).length; s=applyMove(s,cap[0],cap[1]); count+=s.b.filter(x=>x>=0).length-before; }
+  return count;
+}
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+function aiPick(g,level){
+  const all=openMoves(g); if(!all.length) return null;
+  const caps=all.filter(m=>captures(g,m));
+  if(level==="easy"){ if(caps.length && Math.random()<0.6) return rand(caps); return rand(all); }
+  if(caps.length) return rand(caps);
+  const safe=all.filter(m=>isSafe(g,m));
+  if(safe.length) return rand(safe);
+  if(level==="medium") return rand(all);
+  let best=Infinity, picks=[];
+  for(const m of all){ const c=giveaway(g,m); if(c<best){best=c;picks=[m];} else if(c===best) picks.push(m); }
+  return rand(picks);
+}
+
+// ---------- state ----------
+let mode="local";
+function defaultLocalSeats(P){
+  return Array.from({length:P},(_,i)=> i===0 ? {name:"You",type:"human"} : {name:BOT_NAMES[i-1],type:i%2?"medium":"hard"});
+}
+let local={ g:fresh(5,3), seats:defaultLocalSeats(3) };
+let online={ ref:null, me:null, doc:null, busy:false, readOnly:false, available:null, pending:{n:5,P:3} };
+let aiTimer=null, aiKey=null;
+
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>t.hidden=true,2800); }
+
+// ---------- view model ----------
+function view(){
+  if(mode==="local"){
+    const g=local.g;
+    return { g, seats:local.seats.map(s=>({name:s.name, ai:s.type==="human"?null:s.type})), ready:true, mySeat:null,
+      canMove:p=>local.seats[p] && local.seats[p].type==="human" && p===g.turn, canConfig:true };
+  }
+  const d=online.doc;
+  const g = d || fresh(online.pending.n, online.pending.P);
+  const raw = d?.seats || Array(g.P).fill(null);
+  const seats = Array.from({length:g.P},(_,i)=>raw[i]||null);
+  const mySeat = seats.findIndex(s=>s && !s.ai && s.id===online.me);
+  const ready = seats.every(Boolean);
+  const meSeated = mySeat>=0;
+  return { g, seats, ready, mySeat: meSeated?mySeat:null,
+    canMove:p=>ready && !online.busy && !online.readOnly && mySeat===p && p===g.turn,
+    canConfig: online.available && !online.readOnly && !!online.me && (meSeated || !d) };
+}
+const seatName=(vm,p)=>(vm.seats[p] && vm.seats[p].name) || `Player ${p+1}`;
+
+function render(){
+  const vm=view(), g=vm.g, sc=scores(g), done=over(g);
+  $("tabOnline").setAttribute("aria-pressed", mode==="online");
+  $("tabLocal").setAttribute("aria-pressed", mode==="local");
+  $("onlineBar").hidden = !(mode==="online" && online.available && online.me && !online.readOnly);
+  $("leave").hidden = !(mode==="online" && vm.mySeat!=null);
+  $("newGame").disabled = mode==="online" && (vm.mySeat==null || online.readOnly);
+  $("solo").hidden = mode!=="local";
+  $("pCount").textContent=g.P;
+  $("pMinus").disabled = !vm.canConfig || g.P<=MINP;
+  $("pPlus").disabled = !vm.canConfig || g.P>=MAXP;
+  $("size").value=String(g.n); $("size").disabled=!vm.canConfig;
+
+  // seats
+  const wrap=$("seats"); wrap.textContent="";
+  for(let p=0;p<g.P;p++){
+    const seat=vm.seats[p];
+    const el=document.createElement("div"); el.className="seat"+(!done && vm.ready && g.turn===p?" turn":"");
+    el.style.setProperty("--c",COLORS[p]);
+    const top=document.createElement("div"); top.className="top";
+    const d=document.createElement("span"); d.className="dot"; top.append(d);
+    if(mode==="local"){
+      const inp=document.createElement("input"); inp.id="pname"+p; inp.maxLength=16; inp.value=local.seats[p].name;
+      inp.setAttribute("aria-label",`Player ${p+1} name`);
+      inp.addEventListener("change",()=>{ local.seats[p].name=inp.value.trim()||`Player ${p+1}`; render(); });
+      top.append(inp); el.append(top);
+      const sel=document.createElement("select"); sel.id="ptype"+p; sel.setAttribute("aria-label",`Player ${p+1} type`);
+      [["human","Person"],["easy","AI · Easy"],["medium","AI · Medium"],["hard","AI · Hard"]].forEach(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent=t;sel.append(o);});
+      sel.value=local.seats[p].type;
+      sel.addEventListener("change",()=>{
+        const s=local.seats[p], wasHuman=s.type==="human"; s.type=sel.value;
+        if(wasHuman && s.type!=="human" && /^(You|Player \d)$/.test(s.name)) s.name=BOT_NAMES[p%BOT_NAMES.length];
+        if(!wasHuman && s.type==="human" && BOT_NAMES.includes(s.name)) s.name=`Player ${p+1}`;
+        render();
+      });
+      el.append(sel);
+    } else {
+      const nm=document.createElement("span"); nm.className="nm"; nm.textContent = seat ? seat.name : "Empty seat"; top.append(nm);
+      if(seat && seat.ai && vm.canConfig){
+        const x=document.createElement("button"); x.type="button"; x.className="x"; x.textContent="×"; x.setAttribute("aria-label",`Remove ${seat.name}`);
+        x.addEventListener("click",()=>setSeat(p,null)); top.append(x);
+      }
+      el.append(top);
+      if(seat && seat.ai && vm.canConfig){
+        const sel=document.createElement("select"); sel.id="olevel"+p; sel.setAttribute("aria-label",`${seat.name} difficulty`);
+        Object.entries(LEVELS).forEach(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent="AI · "+t;sel.append(o);});
+        sel.value=seat.ai; sel.addEventListener("change",()=>setSeat(p,{...seat, ai:sel.value}));
+        el.append(sel);
+      }
+    }
+    const mid=document.createElement("div"); mid.className="mid";
+    const s=document.createElement("div"); s.className="sc"; s.textContent=sc[p]; mid.append(s);
+    const tag=document.createElement("div"); tag.className="tag";
+    const isTurn = !done && vm.ready && g.turn===p;
+    if(seat && seat.ai) tag.textContent = isTurn ? "Thinking…" : `AI · ${LEVELS[seat.ai]}`;
+    else if(mode==="online" && vm.mySeat===p) tag.textContent = isTurn ? "Your turn" : "You";
+    else if(seat) tag.textContent = isTurn ? "Their turn" : (mode==="online"?"Seated":"Person");
+    mid.append(tag); el.append(mid);
+    if(mode==="online" && !seat){
+      const acts=document.createElement("div"); acts.className="acts";
+      if(online.available && online.me && !online.readOnly){
+        const b=document.createElement("button"); b.type="button"; b.textContent= vm.mySeat!=null ? "Move here" : "Sit here";
+        b.addEventListener("click",()=>sit(p)); acts.append(b);
+        if(vm.canConfig){ const a=document.createElement("button"); a.type="button"; a.textContent="Add AI";
+          a.addEventListener("click",()=>setSeat(p,{ai:"medium",name:BOT_NAMES[p%BOT_NAMES.length]})); acts.append(a); }
+      }
+      el.append(acts);
+    }
+    wrap.append(el);
+  }
+
+  // status
+  const st=$("status"); st.style.color="";
+  if(mode==="online" && !online.available){ st.textContent = online.available===null ? "Connecting…" : "Online play isn't available here"; }
+  else if(mode==="online" && !vm.ready){ const open=vm.seats.filter(x=>!x).length; st.textContent=`Waiting for ${open} more player${open>1?"s":""}`; }
+  else if(done){
+    const max=Math.max(...sc), winners=sc.map((v,p)=>v===max?p:-1).filter(p=>p>=0);
+    if(winners.length===1){ st.textContent=`${seatName(vm,winners[0])} wins with ${max} boxes!`; st.style.color=COLORS[winners[0]]; }
+    else st.textContent=`Tie between ${winners.map(p=>seatName(vm,p)).join(" and ")} at ${max} boxes`;
+  } else {
+    const t=g.turn, seat=vm.seats[t]; st.style.color=COLORS[t];
+    if(seat && seat.ai) st.textContent=`${seat.name} is thinking…`;
+    else if(mode==="online" && vm.mySeat===t) st.textContent="Your turn. Draw a line.";
+    else if(mode==="local" && seatName(vm,t)==="You") st.textContent="Your turn. Draw a line.";
+    else st.textContent=`${seatName(vm,t)}'s turn`;
+  }
+
+  drawBoard(vm);
+  scheduleAI(vm);
+}
+
+function drawBoard(vm){
+  const g=vm.g, n=g.n, W=n*S+PAD*2, svg=$("svg"), NS="http://www.w3.org/2000/svg";
+  svg.setAttribute("viewBox",`0 0 ${W} ${W}`); svg.textContent="";
+  const mk=(t,a)=>{const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); return e;};
+  const x=c=>PAD+c*S, y=r=>PAD+r*S;
+  for(let r=0;r<n;r++) for(let c=0;c<n;c++){ const o=g.b[r*n+c]; if(o<0) continue;
+    svg.append(mk("rect",{x:x(c)+3,y:y(r)+3,width:S-6,height:S-6,rx:4,class:"boxfill",fill:COLORS[o]}));
+    const t=mk("text",{x:x(c)+S/2,y:y(r)+S/2+2,class:"boxmark",fill:COLORS[o]}); t.textContent=seatName(vm,o).trim().charAt(0).toUpperCase(); svg.append(t);
+  }
+  const done=over(g), turn=g.turn, clickable=!done && vm.canMove(turn);
+  const line=(k,i,x1,y1,x2,y2)=>{
+    const owner=(k==="h"?g.h:g.v)[i];
+    if(owner>=0){
+      const isLast=g.last && g.last.k===k && g.last.i===i;
+      svg.append(mk("line",{x1,y1,x2,y2,class:"drawn"+(isLast?" last":""),stroke:COLORS[owner]}));
+    } else {
+      if(clickable){
+        const h=mk("line",{x1,y1,x2,y2,class:"hit",tabindex:"0",role:"button","aria-label":`${k==="h"?"Horizontal":"Vertical"} line ${i+1}`});
+        h.style.setProperty("--hc",COLORS[turn]);
+        h.addEventListener("click",()=>move(k,i));
+        h.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();move(k,i);} });
+        svg.append(h);
+      }
+      const gh=mk("line",{x1,y1,x2,y2,class:"ghost"}); gh.style.setProperty("--hc",COLORS[turn]); svg.append(gh);
+    }
+  };
+  for(let r=0;r<=n;r++) for(let c=0;c<n;c++) line("h",hI(g,r,c),x(c),y(r),x(c+1),y(r));
+  for(let r=0;r<n;r++) for(let c=0;c<=n;c++) line("v",vI(g,r,c),x(c),y(r),x(c),y(r+1));
+  for(let r=0;r<=n;r++) for(let c=0;c<=n;c++) svg.append(mk("circle",{cx:x(c),cy:y(r),r:5,class:"pt"}));
+}
+
+// ---------- AI scheduling ----------
+function scheduleAI(vm){
+  const g=vm.g, seat=vm.seats[g.turn];
+  const want = !over(g) && vm.ready && seat && seat.ai &&
+    (mode==="local" || (online.available && vm.mySeat!=null && !online.readOnly && online.doc));
+  const key = want ? `${mode}:${g.moves}:${g.turn}:${g.P}:${g.n}` : null;
+  if(key===aiKey) return;
+  clearTimeout(aiTimer); aiKey=key; if(!want) return;
+  const delay = 550 + Math.random()*350;
+  aiTimer=setTimeout(()=>{ aiKey=null; mode==="local" ? localAI() : onlineAI(g.moves); }, delay);
+}
+function localAI(){
+  const g=local.g, s=local.seats[g.turn]; if(over(g) || !s || s.type==="human") return;
+  const m=aiPick(g,s.type); if(!m) return;
+  local.g=applyMove(g,m[0],m[1]); render();
+}
+async function onlineAI(expectedMoves){
+  if(online.busy) { render(); return; }
+  try{
+    const lease=await online.ref.acquire({holder:online.me, ttlMs:1500});
+    if(!lease.acquired) return;
+    const snap=await online.ref.get(); if(!snap.exists) return;
+    const d=JSON.parse(JSON.stringify(snap.data()));
+    const seat=d.seats?.[d.turn];
+    if((d.moves||0)!==expectedMoves || !seat || !seat.ai || over(d)) return;
+    const m=aiPick(d,seat.ai); if(!m) return;
+    const n=applyMove(d,m[0],m[1]);
+    await write({...n, seats:d.seats});
+  } catch(e){ handleErr(e); }
+}
+
+// ---------- actions ----------
+async function move(k,i){
+  if(mode==="local"){ const n=applyMove(local.g,k,i); if(n){ local.g=n; render(); } return; }
+  const vm=view(); if(!vm.canMove(vm.g.turn)) return;
+  const n=applyMove(online.doc,k,i); if(!n) return;
+  await write({...n, seats:online.doc.seats});
+}
+function configure(n,P){
+  n=Math.max(3,Math.min(7,n)); P=Math.max(MINP,Math.min(MAXP,P));
+  if(mode==="local"){
+    while(local.seats.length<P){ const i=local.seats.length; local.seats.push({name:BOT_NAMES[(i-1+BOT_NAMES.length)%BOT_NAMES.length],type:"medium"}); }
+    local.seats.length=P; local.g=fresh(n,P); render(); return;
+  }
+  if(!online.doc){ online.pending={n,P}; render(); return; }
+  const seats=Array.from({length:P},(_,i)=>online.doc.seats[i]||null);
+  write({...fresh(n,P), seats});
+}
+async function newGame(){
+  if(mode==="local"){ local.g=fresh(local.g.n,local.g.P); render(); return; }
+  if(!online.doc) return;
+  await write({...online.doc, ...fresh(online.doc.n,online.doc.P)});
+}
+async function write(data){
+  online.busy=true; online.doc=data; render();
+  try{ await online.ref.set(data); }
+  catch(e){ handleErr(e); }
+  finally{ online.busy=false; render(); }
+}
+function handleErr(e){
+  if(e && e.code==="invalid_argument"){ online.readOnly=true; toast("That didn't go through. Reload the page and rejoin the room."); }
+  else if(e && e.code==="unavailable"){ toast("Connection hiccup. Try that again."); }
+  else toast("That didn't go through. Try again.");
+  render();
+}
+async function editSeats(fn){
+  if(online.busy) return;
+  online.busy=true; render();
+  try{
+    const lease=await lockDoc(online.ref,online.me);
+    if(!lease.acquired){ toast("Someone else is changing seats. Try again in a second."); return; }
+    const snap=await online.ref.get();
+    const d = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : {...fresh(online.pending.n,online.pending.P), seats:Array(online.pending.P).fill(null)};
+    if(!Array.isArray(d.seats)) d.seats=Array(d.P).fill(null);
+    d.seats=Array.from({length:d.P},(_,i)=>d.seats[i]||null);
+    if(fn(d)===false) return;
+    await online.ref.set(d); online.doc=d;
+  } catch(e){ handleErr(e); }
+  finally{ online.busy=false; render(); }
+}
+function sit(p){
+  const name=($("myName").value.trim()||`Player ${p+1}`).slice(0,20);
+  return editSeats(d=>{
+    if(d.seats[p]){ toast("That seat was just taken."); return false; }
+    d.seats=d.seats.map(s=>s && !s.ai && s.id===online.me ? null : s);
+    d.seats[p]={id:online.me, name};
+  });
+}
+function setSeat(p,val){ return editSeats(d=>{ d.seats[p]=val; }); }
+function leave(){ return editSeats(d=>{ d.seats=d.seats.map(s=>s && !s.ai && s.id===online.me ? null : s); }); }
+
+// ---------- online wiring ----------
+const within=(p,ms)=>Promise.race([Promise.resolve(p),new Promise(r=>setTimeout(()=>r(null),ms))]);
+async function connectOnline(){
+  if(online.available!==null) return;
+  try{
+    const [db,user]=await Promise.all([within(window.claude?.use?.("db"),3600000), within(window.claude?.use?.("user"),3600000)]);
+    const me=user ? await user.id() : null;
+    if(!db){ online.available=false; noteOff("Online play couldn't start. Reload the page to try again."); render(); return; }
+    online.me=me; online.ref=db.doc("games/main"); online.available=true;
+    if(!me) noteOff("Reload the page to rejoin the room.");
+    else if(user && (await user.can("data.write"))===false){ online.readOnly=true; noteOff("That didn't go through. Reload the page and rejoin the room."); }
+    else $("onlineNote").hidden=true;
+    online.ref.onSnapshot(s=>{
+      if(online.busy && s.metadata.hasPendingWrites) return;
+      const d = s.exists ? s.data() : null;
+      online.doc = d && Array.isArray(d.h) ? {n:5,P:3,moves:0,...d} : null;
+      render();
+    }, e=>handleErr(e));
+  } catch(e){ online.available=false; noteOff("Online play couldn't connect. You can still play on one device."); }
+  render();
+}
+function noteOff(msg){ const n=$("onlineNote"); n.textContent=msg; n.hidden=false; }
+
+function setMode(m){ mode=m; if(m==="online") connectOnline(); else $("onlineNote").hidden=true; render(); }
+
+$("tabOnline").addEventListener("click",()=>setMode("online"));
+$("tabLocal").addEventListener("click",()=>setMode("local"));
+$("newGame").addEventListener("click",newGame);
+$("leave").addEventListener("click",leave);
+$("pMinus").addEventListener("click",()=>{ const g=view().g; configure(g.n,g.P-1); });
+$("pPlus").addEventListener("click",()=>{ const g=view().g; configure(g.n,g.P+1); });
+$("size").addEventListener("change",()=>{ const g=view().g; configure(+$("size").value,g.P); });
+$("solo").addEventListener("click",()=>{
+  local.seats=[{name:local.seats[0]?.type==="human"?local.seats[0].name:"You",type:"human"},{name:"Rivet",type:"hard"}];
+  local.g=fresh(local.g.n,2); render(); toast("You vs Rivet (Hard). Change the level on Rivet's card.");
+});
+try{ const n=localStorage.getItem("twd-name"); if(n) $("myName").value=n; }catch(e){}
+$("myName").addEventListener("change",()=>{ try{ localStorage.setItem("twd-name",$("myName").value.trim()); }catch(e){} });
+
+function start(){
+  try{ const saved=window.claude?.hot?.data;
+    if(saved && saved.local && saved.local.g && saved.local.g.P && saved.local.seats) local=saved.local; }catch(e){}
+  try{ window.claude?.hot?.snapshot?.(()=>({local})); }catch(e){}
+  render();
+}
+start();
+</script>
+<a class="kgn-home" href="../">More games</a>
+</body>
+</html>

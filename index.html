@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Game Night</title>
+<meta name="description" content="Five quick games to play with friends online or against the computer. No sign-up, works on phones.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff5a1f'/%3E%3Ccircle cx='10' cy='10' r='3' fill='white'/%3E%3Ccircle cx='22' cy='10' r='3' fill='white'/%3E%3Ccircle cx='10' cy='22' r='3' fill='white'/%3E%3Ccircle cx='22' cy='22' r='3' fill='white'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;600;700&display=swap">
+<style>
+/* Layout: one column of game "boxes" on a table — each card carries its own game's color and a tiny drawing of its board */
+:root{
+  --bg:#f3efe8; --card:#fffdf9; --ink:#1b1a20; --muted:#625f6b; --line:#e2dcd2;
+  --dots:#2457c5; --ship:#cf3a1d; --dice:#245443; --mine:#e2541c; --snake:#1f9d63;
+  --display:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141317; --card:#1d1c22; --ink:#f1eef6; --muted:#a29fab; --line:#2e2c35;
+  --dots:#7aa7ff; --ship:#ff6a4d; --dice:#5fcf9a; --mine:#ff8a4d; --snake:#4ef0a0; color-scheme:dark}}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--body)}
+.wrap{max-width:860px;margin:0 auto;padding-block:40px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:36px}
+header{display:flex;flex-direction:column;gap:10px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,9vw,4.6rem);line-height:.9;letter-spacing:-.03em;margin:0}
+h1 span{color:var(--mine)}
+.lede{margin:0;color:var(--muted);font-size:1.1rem;max-width:34em}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:14px}
+.game{--c:var(--ink);display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;align-items:center;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);
+  color:inherit;text-decoration:none;transition:transform .15s ease,border-color .15s ease}
+.game:hover{transform:translateY(-2px);border-color:var(--c)}
+.game:focus-visible{outline:3px solid var(--c);outline-offset:2px}
+.art{width:96px;height:96px;border-radius:12px;background:color-mix(in srgb,var(--c) 12%,var(--card));display:block}
+.game h2{font-family:var(--display);font-weight:800;font-size:1.45rem;line-height:1.05;margin:0 0 4px;color:var(--c)}
+.game p{margin:0;color:var(--muted);font-size:.95rem}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tags span{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:14px}
+.how h3{grid-column:1/-1;font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0}
+.step{display:flex;gap:12px;align-items:flex-start}
+.step b{font-family:var(--display);font-size:1.6rem;line-height:1;color:var(--mine);flex:none;width:1.2em}
+.step p{margin:0;color:var(--muted)} .step strong{color:var(--ink)}
+footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padding-top:16px}
+@media (prefers-reduced-motion:reduce){.game{transition:none}.game:hover{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Game <span>Night</span></h1>
+    <p class="lede">Five quick games for your phone. Play against the computer, or make a room and send the link to friends. No sign-up.</p>
+  </header>
+
+  <main class="games">
+    <a class="game" href="dots/" style="--c:var(--dots)">
+      <svg class="art" viewBox="0 0 96 96" aria-hidden="true">
+        <g fill="currentColor" style="color:var(--dots)">
+          <rect x="22" y="22" width="26" height="26" rx="3" opacity=".2"/>
+          <path d="M22 22h26v26M48 48h26" stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M22 22v26h26" stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none" opacity=".55"/>
+          <g fill="var(--ink)"><circle cx="22" cy="22" r="4"/><circle cx="48" cy="22" r="4"/><circle cx="74" cy="22" r="4"/><circle cx="22" cy="48" r="4"/><circle cx="48" cy="48" r="4"/><circle cx="74" cy="48" r="4"/><circle cx="22" cy="74" r="4"/><circle cx="48" cy="74" r="4"/><circle cx="74" cy="74" r="4"/></g>
+        </g>
+      </svg>
+      <div><h2>Three-Way Dots</h2><p>Draw lines, close boxes, and take another turn when you do.</p>
+        <div class="tags"><span>2–6 players</span><span>Computer players</span><span>Online</span></div></div>
+    </a>
+
+    <a class="game" href="battleship/" style="--c:var(--ship)">
+      <svg class="art" viewBox="0 0 96 96" aria-hidden="true">
+        <g opacity=".25" fill="var(--ink)"><rect x="14" y="14" width="14" height="14" rx="2"/><rect x="31" y="14" width="14" height="14" rx="2"/><rect x="48" y="14" width="14" height="14" rx="2"/><rect x="65" y="14" width="14" height="14" rx="2"/><rect x="14" y="31" width="14" height="14" rx="2"/><rect x="65" y="31" width="14" height="14" rx="2"/><rect x="14" y="48" width="14" height="14" rx="2"/><rect x="31" y="48" width="14" height="14" rx="2"/><rect x="48" y="48" width="14" height="14" rx="2"/><rect x="65" y="48" width="14" height="14" rx="2"/><rect x="14" y="65" width="14" height="14" rx="2"/><rect x="31" y="65" width="14" height="14" rx="2"/><rect x="48" y="65" width="14" height="14" rx="2"/><rect x="65" y="65" width="14" height="14" rx="2"/></g>
+        <rect x="31" y="31" width="14" height="14" rx="2" fill="var(--ship)"/><rect x="48" y="31" width="14" height="14" rx="2" fill="var(--ship)"/>
+        <path d="M34 34l8 8M42 34l-8 8M51 34l8 8M59 34l-8 8" stroke="var(--card)" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="72" cy="72" r="3" fill="var(--ink)" opacity=".6"/><circle cx="21" cy="21" r="3" fill="var(--ink)" opacity=".6"/>
+      </svg>
+      <div><h2>Fleet Command</h2><p>Battleship. Hide your ships, then hunt down the enemy fleet.</p>
+        <div class="tags"><span>2 players</span><span>Computer opponent</span><span>Online</span></div></div>
+    </a>
+
+    <a class="game" href="liars-dice/" style="--c:var(--dice)">
+      <svg class="art" viewBox="0 0 96 96" aria-hidden="true">
+        <rect x="14" y="30" width="38" height="38" rx="8" fill="#f5f1e4" stroke="var(--dice)" stroke-width="2" transform="rotate(-10 33 49)"/>
+        <g fill="#1c1c1a" transform="rotate(-10 33 49)"><circle cx="24" cy="40" r="3.4"/><circle cx="33" cy="49" r="3.4"/><circle cx="42" cy="58" r="3.4"/></g>
+        <rect x="46" y="22" width="36" height="36" rx="8" fill="#f5f1e4" stroke="var(--dice)" stroke-width="2" transform="rotate(12 64 40)"/>
+        <g fill="#1c1c1a" transform="rotate(12 64 40)"><circle cx="55" cy="31" r="3.2"/><circle cx="73" cy="31" r="3.2"/><circle cx="55" cy="49" r="3.2"/><circle cx="73" cy="49" r="3.2"/></g>
+        <text x="62" y="86" font-family="Georgia,serif" font-size="15" font-weight="700" fill="var(--dice)" text-anchor="middle">Liar!</text>
+      </svg>
+      <div><h2>Liar's Dice</h2><p>Bid on hidden dice. Bluff, or call someone's bluff.</p>
+        <div class="tags"><span>2–6 players</span><span>Computer players</span><span>Online</span></div></div>
+    </a>
+
+    <a class="game" href="minesweeper/" style="--c:var(--mine)">
+      <svg class="art" viewBox="0 0 96 96" aria-hidden="true">
+        <g fill="var(--ink)" opacity=".18"><rect x="14" y="14" width="20" height="20" rx="3"/><rect x="62" y="14" width="20" height="20" rx="3"/><rect x="14" y="62" width="20" height="20" rx="3"/><rect x="62" y="62" width="20" height="20" rx="3"/><rect x="38" y="62" width="20" height="20" rx="3"/></g>
+        <g font-family="system-ui,sans-serif" font-weight="800" font-size="15" text-anchor="middle"><text x="48" y="29" fill="#2459c9">1</text><text x="24" y="53" fill="#1d8a4a">2</text><text x="72" y="53" fill="#d0352a">3</text></g>
+        <circle cx="48" cy="48" r="7" fill="var(--ink)"/><path d="M48 37v22M37 48h22M40 40l16 16M56 40L40 56" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M70 66v14" stroke="var(--ink)" stroke-width="2.4"/><path d="M71 66l9 4-9 4z" fill="var(--mine)"/>
+      </svg>
+      <div><h2>Minesweeper Race</h2><p>Same minefield for everyone. Fastest to clear it wins.</p>
+        <div class="tags"><span>1+ players</span><span>Computer rival</span><span>Online</span></div></div>
+    </a>
+
+    <a class="game" href="snake/" style="--c:var(--snake)">
+      <svg class="art" viewBox="0 0 96 96" aria-hidden="true">
+        <rect width="96" height="96" rx="12" fill="#0c0a1c"/>
+        <path d="M16 70h24V44h26V26" stroke="#4ef0a0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M80 76H62V60" stroke="#ff5ac8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="80" cy="30" r="4" fill="#ffd23f"/><circle cx="26" cy="28" r="4" fill="#ffd23f"/>
+      </svg>
+      <div><h2>Snake Arena</h2><p>Real-time snakes on one board. Last one moving wins.</p>
+        <div class="tags"><span>Up to 6</span><span>Computer snakes</span><span>Online</span></div></div>
+    </a>
+  </main>
+
+  <section class="how" aria-labelledby="how-title">
+    <h3 id="how-title">Playing with friends</h3>
+    <div class="step"><b>1</b><p><strong>Open a game and tap Online.</strong> Choose Create a room.</p></div>
+    <div class="step"><b>2</b><p><strong>Tap Invite friends</strong> and send them the link, or read out the 5-letter room code.</p></div>
+    <div class="step"><b>3</b><p><strong>Keep the game open</strong> while you play. If the person who made the room closes it, the room ends.</p></div>
+  </section>
+
+  <footer>Online rooms connect your devices directly using <a href="https://peerjs.com" style="color:inherit">PeerJS</a>. Nothing is stored on a server, and no account is needed.</footer>
+</div>
+</body>
+</html>
